@@ -2054,362 +2054,697 @@
             
             return validDatasets > 0 ? [sumLow / validDatasets, sumHigh / validDatasets] : null;
         }
+// Add this first - Error bar plugin for Chart.js
+Chart.register({
+    id: 'chartjs-plugin-error-bars',
+    beforeDraw: function(chart) {
+        if (chart.config.data.datasets.some(dataset => dataset.errorBars && dataset.errorBars.show)) {
+            const ctx = chart.ctx;
+            
+            chart.data.datasets.forEach(function(dataset, i) {
+                const meta = chart.getDatasetMeta(i);
+                if (!meta.hidden && dataset.errorBars && dataset.errorBars.show) {
+                    const errorBars = dataset.errorBars;
+                    
+                    meta.data.forEach(function(element, index) {
+                        const errorValue = errorBars.errorValues[index];
+                        if (errorValue) {
+                            const x = element.x;
+                            const y = element.y;
+                            const barWidth = element.width;
+                            
+                            // Draw minus error
+                            if (errorValue.minus) {
+                                const yMinus = y + (errorValue.minus / chart.scales.y.max) * chart.chartArea.height;
+                                
+                                ctx.save();
+                                ctx.beginPath();
+                                ctx.moveTo(x, y);
+                                ctx.lineTo(x, yMinus);
+                                ctx.strokeStyle = errorBars.color;
+                                ctx.lineWidth = errorBars.width;
+                                ctx.stroke();
+                                
+                                // Draw horizontal line
+                                ctx.beginPath();
+                                ctx.moveTo(x - barWidth/4, yMinus);
+                                ctx.lineTo(x + barWidth/4, yMinus);
+                                ctx.stroke();
+                                ctx.restore();
+                            }
+                            
+                            // Draw plus error
+                            if (errorValue.plus) {
+                                const yPlus = y - (errorValue.plus / chart.scales.y.max) * chart.chartArea.height;
+                                
+                                ctx.save();
+                                ctx.beginPath();
+                                ctx.moveTo(x, y);
+                                ctx.lineTo(x, yPlus);
+                                ctx.strokeStyle = errorBars.color;
+                                ctx.lineWidth = errorBars.width;
+                                ctx.stroke();
+                                
+                                // Draw horizontal line
+                                ctx.beginPath();
+                                ctx.moveTo(x - barWidth/4, yPlus);
+                                ctx.lineTo(x + barWidth/4, yPlus);
+                                ctx.stroke();
+                                ctx.restore();
+                            }
+                        }
+                    });
+                }
+            });
+        }
+    }
+});
+
+// Update the renderOverviewView function to include error bars
+function renderOverviewView() {
+    const vizContent = document.getElementById('visualization-content');
+    
+    // Get datasets for this view
+    const datasetsForView = getDatasetsForView('overview');
+    
+    if (datasetsForView.length === 0) {
+        showError('No datasets available with current selections.');
+        return;
+    }
+    
+    // If not using dataset groups, get the selected single dataset
+    let selectedDataset = null;
+    if (!state.viewSpecificState.overview.useDatasetGroup) {
+        const datasetSelect = document.getElementById('overview-dataset');
+        selectedDataset = datasetSelect.value;
         
-        // Render the overview visualization
-        function renderOverviewView() {
-            const vizContent = document.getElementById('visualization-content');
-            
-            // Get datasets for this view
-            const datasetsForView = getDatasetsForView('overview');
-            
-            if (datasetsForView.length === 0) {
-                showError('No datasets available with current selections.');
-                return;
-            }
-            
-            // If not using dataset groups, get the selected single dataset
-            let selectedDataset = null;
-            if (!state.viewSpecificState.overview.useDatasetGroup) {
-                const datasetSelect = document.getElementById('overview-dataset');
-                selectedDataset = datasetSelect.value;
-                
-                if (!selectedDataset) {
-                    showError('No dataset selected or available with current filters.');
-                    return;
-                }
-            }
-            
-            // Get settings
-            const groupBy = state.viewSpecificState.overview.groupBy;
-            const sortBy = state.viewSpecificState.overview.sortBy;
-            
-            // Get models and methods that have data
-            const validPairs = [];
-            
-            state.selectedModels.forEach(model => {
-                state.selectedMethods.forEach(method => {
-                    if (state.viewSpecificState.overview.useDatasetGroup) {
-                        // For dataset groups, check if the model/method has data for any dataset in the group
-                        const value = aggregateMetrics(model, method, datasetsForView, state.selectedMetric);
-                        if (value !== null) {
-                            validPairs.push({ model, method, value });
-                        }
-                    } else if (state.data[model] && 
-                        state.data[model][method] && 
-                        state.data[model][method][selectedDataset]) {
-                        validPairs.push({ 
-                            model, 
-                            method, 
-                            value: state.data[model][method][selectedDataset][state.selectedMetric] 
-                        });
-                    }
-                });
-            });
-            
-            if (validPairs.length === 0) {
-                showError('No data available for the selected dataset(s) with current filters.');
-                return;
-            }
-            
-            // Group the data
-            let groupedData = {};
-            
-            if (groupBy === 'family') {
-                validPairs.forEach(pair => {
-                    // Extract model family (Gemma2, SmolLM, etc.)
-                    let family = pair.model.split(' ')[0];
-                    // Handle DetectLLM variants
-                    if (family.includes('DetectLLM')) {
-                        family = pair.model.split(' ')[0].replace('DetectLLM', '') + ' DetectLLM';
-                    }
-                    
-                    if (!groupedData[family]) {
-                        groupedData[family] = [];
-                    }
-                    groupedData[family].push(pair);
-                });
-            } else if (groupBy === 'size') {
-                validPairs.forEach(pair => {
-                    // Extract model size (2B, 9B, 135M, etc.)
-                    let size = 'Unknown';
-                    const nameComponents = pair.model.split(' ');
-                    
-                    for (const component of nameComponents) {
-                        if (component.includes('B') || component.includes('M')) {
-                            size = component;
-                            break;
-                        }
-                    }
-                    
-                    if (!groupedData[size]) {
-                        groupedData[size] = [];
-                    }
-                    groupedData[size].push(pair);
-                });
-            } else if (groupBy === 'method') {
-                validPairs.forEach(pair => {
-                    if (!groupedData[pair.method]) {
-                        groupedData[pair.method] = [];
-                    }
-                    groupedData[pair.method].push(pair);
-                });
-            } else { // No grouping
-                validPairs.forEach(pair => {
-                    const key = `${pair.model} (${pair.method})`;
-                    groupedData[key] = [pair];
-                });
-            }
-            
-            // Calculate average metric for each group
-            const labels = [];
-            const values = [];
-            
-            Object.keys(groupedData).forEach(group => {
-                const pairs = groupedData[group];
-                
-                // Calculate average metric
-                const sum = pairs.reduce((acc, pair) => {
-                    return acc + pair.value;
-                }, 0);
-                
-                const avg = sum / pairs.length;
-                
-                labels.push(group);
-                values.push(avg);
-            });
-            
-            // Sort data based on user's preference
-            if (sortBy !== 'alphabetical') {
-                // Create an array of [label, value] pairs for sorting
-                let pairs = labels.map((label, i) => [label, values[i]]);
-                
-                // Sort pairs based on the metric value
-                if (sortBy === 'performance-desc') {
-                    pairs.sort((a, b) => b[1] - a[1]); // Descending
-                } else if (sortBy === 'performance-asc') {
-                    pairs.sort((a, b) => a[1] - b[1]); // Ascending
-                }
-                
-                // Update labels and values arrays
-                labels.length = 0;
-                values.length = 0;
-                
-                pairs.forEach(pair => {
-                    labels.push(pair[0]);
-                    values.push(pair[1]);
-                });
-            }
-            
-            // Create chart container
-            const chartContainer = document.createElement('div');
-            chartContainer.className = 'chart-container';
-            
-            const canvas = document.createElement('canvas');
-            canvas.id = 'overview-chart';
-            chartContainer.appendChild(canvas);
-            
-            vizContent.appendChild(chartContainer);
-            
-            // Determine chart title
-            let chartTitle;
+        if (!selectedDataset) {
+            showError('No dataset selected or available with current filters.');
+            return;
+        }
+    }
+    
+    // Get settings
+    const groupBy = state.viewSpecificState.overview.groupBy;
+    const sortBy = state.viewSpecificState.overview.sortBy;
+    
+    // Get models and methods that have data
+    const validPairs = [];
+    
+    state.selectedModels.forEach(model => {
+        state.selectedMethods.forEach(method => {
             if (state.viewSpecificState.overview.useDatasetGroup) {
-                const groupName = state.datasetGroups.find(g => g.id === state.viewSpecificState.overview.selectedDatasetGroup)?.name;
-                chartTitle = `${state.selectedMetric} for Dataset Group: ${groupName}`;
-            } else {
-                chartTitle = `${state.selectedMetric} for ${selectedDataset}`;
+                // For dataset groups, check if the model/method has data for any dataset in the group
+                const value = aggregateMetrics(model, method, datasetsForView, state.selectedMetric);
+                if (value !== null) {
+                    validPairs.push({ model, method, value });
+                }
+            } else if (state.data[model] && 
+                state.data[model][method] && 
+                state.data[model][method][selectedDataset]) {
+                validPairs.push({ 
+                    model, 
+                    method, 
+                    value: state.data[model][method][selectedDataset][state.selectedMetric] 
+                });
+            }
+        });
+    });
+    
+    if (validPairs.length === 0) {
+        showError('No data available for the selected dataset(s) with current filters.');
+        return;
+    }
+    
+    // Group the data
+    let groupedData = {};
+    
+    if (groupBy === 'family') {
+        validPairs.forEach(pair => {
+            // Extract model family (Gemma2, SmolLM, etc.)
+            let family = pair.model.split(' ')[0];
+            // Handle DetectLLM variants
+            if (family.includes('DetectLLM')) {
+                family = pair.model.split(' ')[0].replace('DetectLLM', '') + ' DetectLLM';
             }
             
-            // Create the chart
-            const ctx = canvas.getContext('2d');
+            if (!groupedData[family]) {
+                groupedData[family] = [];
+            }
+            groupedData[family].push(pair);
+        });
+    } else if (groupBy === 'size') {
+        validPairs.forEach(pair => {
+            // Extract model size (2B, 9B, 135M, etc.)
+            let size = 'Unknown';
+            const nameComponents = pair.model.split(' ');
             
-            state.charts.overview = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: state.selectedMetric,
-                        data: values,
+            for (const component of nameComponents) {
+                if (component.includes('B') || component.includes('M')) {
+                    size = component;
+                    break;
+                }
+            }
+            
+            if (!groupedData[size]) {
+                groupedData[size] = [];
+            }
+            groupedData[size].push(pair);
+        });
+    } else if (groupBy === 'method') {
+        validPairs.forEach(pair => {
+            if (!groupedData[pair.method]) {
+                groupedData[pair.method] = [];
+            }
+            groupedData[pair.method].push(pair);
+        });
+    } else { // No grouping
+        validPairs.forEach(pair => {
+            const key = `${pair.model} (${pair.method})`;
+            groupedData[key] = [pair];
+        });
+    }
+    
+    // Calculate average metric for each group
+    const labels = [];
+    const values = [];
+    const errorValues = [];
+    
+    Object.keys(groupedData).forEach(group => {
+        const pairs = groupedData[group];
+        
+        // Calculate average metric
+        const sum = pairs.reduce((acc, pair) => {
+            return acc + pair.value;
+        }, 0);
+        
+        const avg = sum / pairs.length;
+        
+        labels.push(group);
+        values.push(avg);
+        
+        // Calculate error values
+        if (state.viewSpecificState.overview.useDatasetGroup) {
+            // For dataset groups, get confidence interval from aggregateConfidenceIntervals
+            const datasets = datasetsForView;
+            const metricName = state.selectedMetric;
+            
+            // Get all error intervals for this group
+            const intervals = [];
+            pairs.forEach(pair => {
+                const ci = aggregateConfidenceIntervals(pair.model, pair.method, datasets, metricName);
+                if (ci !== null) {
+                    intervals.push(ci);
+                }
+            });
+            
+            if (intervals.length > 0) {
+                // Average the CIs
+                const avgLow = intervals.reduce((sum, interval) => sum + interval[0], 0) / intervals.length;
+                const avgHigh = intervals.reduce((sum, interval) => sum + interval[1], 0) / intervals.length;
+                errorValues.push({ plus: avgHigh - avg, minus: avg - avgLow });
+            } else {
+                errorValues.push({ plus: 0, minus: 0 });
+            }
+        } else {
+            // For single dataset
+            if (pairs.length === 1 && state.data[pairs[0].model][pairs[0].method][selectedDataset]) {
+                const ciField = state.selectedMetric === 'F1 Score' ? 'F1 Score Confidence Interval' : 'ROC AUC Confidence Interval';
+                const ci = state.data[pairs[0].model][pairs[0].method][selectedDataset][ciField];
+                if (ci) {
+                    errorValues.push({ plus: ci[1] - avg, minus: avg - ci[0] });
+                } else {
+                    errorValues.push({ plus: 0, minus: 0 });
+                }
+            } else {
+                // Multiple models in group, could calculate std dev here
+                errorValues.push({ plus: 0, minus: 0 });
+            }
+        }
+    });
+    
+    // Sort data based on user's preference
+    if (sortBy !== 'alphabetical') {
+        // Create an array of [label, value, errorValue] tuples for sorting
+        let tuples = labels.map((label, i) => [label, values[i], errorValues[i]]);
+        
+        // Sort tuples based on the metric value
+        if (sortBy === 'performance-desc') {
+            tuples.sort((a, b) => b[1] - a[1]); // Descending
+        } else if (sortBy === 'performance-asc') {
+            tuples.sort((a, b) => a[1] - b[1]); // Ascending
+        }
+        
+        // Update arrays
+        labels.length = 0;
+        values.length = 0;
+        errorValues.length = 0;
+        
+        tuples.forEach(tuple => {
+            labels.push(tuple[0]);
+            values.push(tuple[1]);
+            errorValues.push(tuple[2]);
+        });
+    }
+    
+    // Create chart container
+    const chartContainer = document.createElement('div');
+    chartContainer.className = 'chart-container';
+    
+    const canvas = document.createElement('canvas');
+    canvas.id = 'overview-chart';
+    chartContainer.appendChild(canvas);
+    
+    vizContent.appendChild(chartContainer);
+    
+    // Determine chart title
+    let chartTitle;
+    if (state.viewSpecificState.overview.useDatasetGroup) {
+        const groupName = state.datasetGroups.find(g => g.id === state.viewSpecificState.overview.selectedDatasetGroup)?.name;
+        chartTitle = `${state.selectedMetric} for Dataset Group: ${groupName}`;
+    } else {
+        chartTitle = `${state.selectedMetric} for ${selectedDataset}`;
+    }
+    
+    // Create the chart
+    const ctx = canvas.getContext('2d');
+    
+    state.charts.overview = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: state.selectedMetric,
+                data: values,
+                backgroundColor: 'rgba(79, 70, 229, 0.7)',
+                borderColor: 'rgba(79, 70, 229, 1)',
+                borderWidth: 1,
+                // Add error bar data
+                errorBars: {
+                    show: true,
+                    color: 'rgba(0, 0, 0, 0.6)',
+                    width: 2,
+                    errorValues: errorValues
+                }
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: true,
+                    text: chartTitle,
+                    font: {
+                        size: 16
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        afterBody: function(tooltipItems) {
+                            const index = tooltipItems[0].dataIndex;
+                            const group = labels[index];
+                            const pairs = groupedData[group];
+                            const value = values[index];
+                            const errorValue = errorValues[index];
+                            
+                            let result = '';
+                            
+                            if (pairs.length === 1) {
+                                result += `Model: ${pairs[0].model}\nMethod: ${pairs[0].method}\n`;
+                            } else {
+                                result += `Models: ${pairs.map(p => p.model).join(', ')}\n`;
+                            }
+                            
+                            // Add confidence interval information
+                            if (errorValue.plus > 0 || errorValue.minus > 0) {
+                                const low = (value - errorValue.minus).toFixed(4);
+                                const high = (value + errorValue.plus).toFixed(4);
+                                result += `95% CI: [${low}, ${high}]`;
+                            }
+                            
+                            return result;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: false,
+                    min: Math.max(0.5, Math.min(...values) - 0.1),
+                    max: Math.min(1.0, Math.max(...values) + 0.1),
+                    title: {
+                        display: true,
+                        text: state.selectedMetric
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Update the renderComparisonView function to include error bars
+function renderComparisonView() {
+    const vizContent = document.getElementById('visualization-content');
+    
+    // Get selected models
+    const model1 = state.viewSpecificState.comparison.models[0];
+    const model2 = state.viewSpecificState.comparison.models[1];
+    
+    // Get selected method
+    const methodSelect = document.getElementById('comparison-method');
+    const selectedMethod = methodSelect.value;
+    
+    // Get sort preference
+    const sortBy = state.viewSpecificState.comparison.sortBy;
+    
+    // Get datasets for this view
+    const datasetsForView = getDatasetsForView('comparison');
+    
+    // Validate selections
+    if (!model1 || !model2) {
+        showError('Please select two models to compare.');
+        return;
+    }
+    
+    if (!selectedMethod) {
+        showError('Please select a detection method.');
+        return;
+    }
+    
+    // Check if both models have data for this method
+    if (!state.data[model1] || !state.data[model1][selectedMethod] || 
+        !state.data[model2] || !state.data[model2][selectedMethod]) {
+        showError('One or both selected models do not have data for the selected method.');
+        return;
+    }
+    
+    if (state.viewSpecificState.comparison.useDatasetGroup) {
+        // For dataset groups, we compare the aggregated metrics
+        const groupId = state.viewSpecificState.comparison.selectedDatasetGroup;
+        const group = state.datasetGroups.find(g => g.id === groupId);
+        
+        if (!group || group.datasets.length === 0) {
+            showError('The selected dataset group is empty or does not exist.');
+            return;
+        }
+        
+        // Get aggregated metrics for both models
+        const model1Value = aggregateMetrics(model1, selectedMethod, group.datasets, state.selectedMetric);
+        const model2Value = aggregateMetrics(model2, selectedMethod, group.datasets, state.selectedMetric);
+        
+        if (model1Value === null || model2Value === null) {
+            showError('One or both models do not have sufficient data for the selected dataset group.');
+            return;
+        }
+        
+        // Get confidence intervals
+        const model1CI = aggregateConfidenceIntervals(model1, selectedMethod, group.datasets, state.selectedMetric);
+        const model2CI = aggregateConfidenceIntervals(model2, selectedMethod, group.datasets, state.selectedMetric);
+        
+        // Calculate error values
+        const model1ErrorValue = model1CI ? { plus: model1CI[1] - model1Value, minus: model1Value - model1CI[0] } : { plus: 0, minus: 0 };
+        const model2ErrorValue = model2CI ? { plus: model2CI[1] - model2Value, minus: model2Value - model2CI[0] } : { plus: 0, minus: 0 };
+        
+        // Create chart container
+        const chartContainer = document.createElement('div');
+        chartContainer.className = 'chart-container';
+        
+        const canvas = document.createElement('canvas');
+        canvas.id = 'comparison-chart-group';
+        chartContainer.appendChild(canvas);
+        
+        vizContent.appendChild(chartContainer);
+        
+        // Create the chart
+        const ctx = canvas.getContext('2d');
+        
+        state.charts.comparison = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: [group.name],
+                datasets: [
+                    {
+                        label: model1,
+                        data: [model1Value],
                         backgroundColor: 'rgba(79, 70, 229, 0.7)',
                         borderColor: 'rgba(79, 70, 229, 1)',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: chartTitle,
-                            font: {
-                                size: 16
-                            }
-                        },
-                        tooltip: {
-                            callbacks: {
-                                afterBody: function(tooltipItems) {
-                                    const index = tooltipItems[0].dataIndex;
-                                    const group = labels[index];
-                                    const pairs = groupedData[group];
-                                    
-                                    if (pairs.length === 1) {
-                                        return `Model: ${pairs[0].model}\nMethod: ${pairs[0].method}`;
-                                    } else {
-                                        return `Models: ${pairs.map(p => p.model).join(', ')}`;
-                                    }
-                                }
-                            }
+                        borderWidth: 1,
+                        // Add error bar data
+                        errorBars: {
+                            show: true,
+                            color: 'rgba(0, 0, 0, 0.6)',
+                            width: 2,
+                            errorValues: [model1ErrorValue]
                         }
                     },
-                    scales: {
-                        y: {
-                            beginAtZero: false,
-                            min: Math.max(0.5, Math.min(...values) - 0.1),
-                            max: Math.min(1.0, Math.max(...values) + 0.1),
-                            title: {
-                                display: true,
-                                text: state.selectedMetric
+                    {
+                        label: model2,
+                        data: [model2Value],
+                        backgroundColor: 'rgba(236, 72, 153, 0.7)',
+                        borderColor: 'rgba(236, 72, 153, 1)',
+                        borderWidth: 1,
+                        // Add error bar data
+                        errorBars: {
+                            show: true,
+                            color: 'rgba(0, 0, 0, 0.6)',
+                            width: 2,
+                            errorValues: [model2ErrorValue]
+                        }
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: `${state.selectedMetric} Comparison for ${group.name} (${selectedMethod})`,
+                        font: {
+                            size: 16
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            afterBody: function(tooltipItems) {
+                                const datasetIndex = tooltipItems[0].datasetIndex;
+                                const model = datasetIndex === 0 ? model1 : model2;
+                                const value = datasetIndex === 0 ? model1Value : model2Value;
+                                const ci = datasetIndex === 0 ? model1CI : model2CI;
+                                
+                                let result = '';
+                                
+                                if (ci) {
+                                    result += `95% CI: [${ci[0].toFixed(4)}, ${ci[1].toFixed(4)}]\n`;
+                                }
+                                
+                                const diff = model1Value - model2Value;
+                                result += `Difference: ${diff.toFixed(4)}`;
+                                
+                                return result;
                             }
                         }
                     }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        min: Math.max(0.5, Math.min(model1Value, model2Value) - 0.1),
+                        max: Math.min(1.0, Math.max(model1Value, model2Value) + 0.1),
+                        title: {
+                            display: true,
+                            text: state.selectedMetric
+                        }
+                    }
                 }
+            }
+        });
+    } else {
+        // For individual datasets, we create a comparison chart with datasets on x-axis
+        
+        // Find common datasets between the two models for the selected method
+        const model1Datasets = Object.keys(state.data[model1][selectedMethod])
+            .filter(dataset => state.selectedDatasets.includes(dataset));
+        
+        const model2Datasets = Object.keys(state.data[model2][selectedMethod])
+            .filter(dataset => state.selectedDatasets.includes(dataset));
+        
+        const commonDatasets = model1Datasets.filter(dataset => model2Datasets.includes(dataset));
+        
+        if (commonDatasets.length === 0) {
+            showError('No common datasets found for these models with the selected method.');
+            return;
+        }
+        
+        // Create data arrays for the chart
+        const labels = [];
+        const model1Data = [];
+        const model2Data = [];
+        const model1ErrorValues = [];
+        const model2ErrorValues = [];
+        
+        commonDatasets.forEach(dataset => {
+            const model1Value = state.data[model1][selectedMethod][dataset][state.selectedMetric];
+            const model2Value = state.data[model2][selectedMethod][dataset][state.selectedMetric];
+            
+            // Get confidence intervals
+            const ciField = state.selectedMetric === 'F1 Score' ? 'F1 Score Confidence Interval' : 'ROC AUC Confidence Interval';
+            const model1CI = state.data[model1][selectedMethod][dataset][ciField];
+            const model2CI = state.data[model2][selectedMethod][dataset][ciField];
+            
+            labels.push(dataset);
+            model1Data.push(model1Value);
+            model2Data.push(model2Value);
+            
+            // Calculate error values
+            model1ErrorValues.push(model1CI ? { plus: model1CI[1] - model1Value, minus: model1Value - model1CI[0] } : { plus: 0, minus: 0 });
+            model2ErrorValues.push(model2CI ? { plus: model2CI[1] - model2Value, minus: model2Value - model2CI[0] } : { plus: 0, minus: 0 });
+        });
+        
+        // Sort data based on user's preference
+        if (sortBy !== 'alphabetical') {
+            // Create an array of [label, model1Value, model2Value, model1Error, model2Error] tuples for sorting
+            let tuples = labels.map((label, i) => [label, model1Data[i], model2Data[i], model1ErrorValues[i], model2ErrorValues[i]]);
+            
+            if (sortBy === 'performance-desc') {
+                // Sort by average performance, highest first
+                tuples.sort((a, b) => ((b[1] + b[2]) / 2) - ((a[1] + a[2]) / 2));
+            } else if (sortBy === 'performance-asc') {
+                // Sort by average performance, lowest first
+                tuples.sort((a, b) => ((a[1] + a[2]) / 2) - ((b[1] + b[2]) / 2));
+            } else if (sortBy === 'difference-desc') {
+                // Sort by difference in performance, highest first
+                tuples.sort((a, b) => Math.abs(b[1] - b[2]) - Math.abs(a[1] - a[2]));
+            }
+            
+            // Update arrays
+            labels.length = 0;
+            model1Data.length = 0;
+            model2Data.length = 0;
+            model1ErrorValues.length = 0;
+            model2ErrorValues.length = 0;
+            
+            tuples.forEach(tuple => {
+                labels.push(tuple[0]);
+                model1Data.push(tuple[1]);
+                model2Data.push(tuple[2]);
+                model1ErrorValues.push(tuple[3]);
+                model2ErrorValues.push(tuple[4]);
             });
         }
         
-        // Render the comparison visualization
-        function renderComparisonView() {
-            const vizContent = document.getElementById('visualization-content');
-            
-            // Get selected models
-            const model1 = state.viewSpecificState.comparison.models[0];
-            const model2 = state.viewSpecificState.comparison.models[1];
-            
-            // Get selected method
-            const methodSelect = document.getElementById('comparison-method');
-            const selectedMethod = methodSelect.value;
-            
-            // Get sort preference
-            const sortBy = state.viewSpecificState.comparison.sortBy;
-            
-            // Get datasets for this view
-            const datasetsForView = getDatasetsForView('comparison');
-            
-            // Validate selections
-            if (!model1 || !model2) {
-                showError('Please select two models to compare.');
-                return;
-            }
-            
-            if (!selectedMethod) {
-                showError('Please select a detection method.');
-                return;
-            }
-            
-            // Check if both models have data for this method
-            if (!state.data[model1] || !state.data[model1][selectedMethod] || 
-                !state.data[model2] || !state.data[model2][selectedMethod]) {
-                showError('One or both selected models do not have data for the selected method.');
-                return;
-            }
-            
-            if (state.viewSpecificState.comparison.useDatasetGroup) {
-                // For dataset groups, we compare the aggregated metrics
-                const groupId = state.viewSpecificState.comparison.selectedDatasetGroup;
-                const group = state.datasetGroups.find(g => g.id === groupId);
-                
-                if (!group || group.datasets.length === 0) {
-                    showError('The selected dataset group is empty or does not exist.');
-                    return;
-                }
-                
-                // Get aggregated metrics for both models
-                const model1Value = aggregateMetrics(model1, selectedMethod, group.datasets, state.selectedMetric);
-                const model2Value = aggregateMetrics(model2, selectedMethod, group.datasets, state.selectedMetric);
-                
-                if (model1Value === null || model2Value === null) {
-                    showError('One or both models do not have sufficient data for the selected dataset group.');
-                    return;
-                }
-                
-                // Create chart container
-                const chartContainer = document.createElement('div');
-                chartContainer.className = 'chart-container';
-                
-                const canvas = document.createElement('canvas');
-                canvas.id = 'comparison-chart-group';
-                chartContainer.appendChild(canvas);
-                
-                vizContent.appendChild(chartContainer);
-                
-                // Create the chart
-                const ctx = canvas.getContext('2d');
-                
-                state.charts.comparison = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: [group.name],
-                        datasets: [
-                            {
-                                label: model1,
-                                data: [model1Value],
-                                backgroundColor: 'rgba(79, 70, 229, 0.7)',
-                                borderColor: 'rgba(79, 70, 229, 1)',
-                                borderWidth: 1
-                            },
-                            {
-                                label: model2,
-                                data: [model2Value],
-                                backgroundColor: 'rgba(236, 72, 153, 0.7)',
-                                borderColor: 'rgba(236, 72, 153, 1)',
-                                borderWidth: 1
-                            }
-                        ]
+        // Create chart container
+        const chartContainer = document.createElement('div');
+        chartContainer.className = 'chart-container';
+        
+        const canvas = document.createElement('canvas');
+        canvas.id = 'comparison-chart-datasets';
+        chartContainer.appendChild(canvas);
+        
+        vizContent.appendChild(chartContainer);
+        
+        // Create the chart
+        const ctx = canvas.getContext('2d');
+        
+        state.charts.comparison = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: model1,
+                        data: model1Data,
+                        backgroundColor: 'rgba(79, 70, 229, 0.7)',
+                        borderColor: 'rgba(79, 70, 229, 1)',
+                        borderWidth: 1,
+                        // Add error bar data
+                        errorBars: {
+                            show: true,
+                            color: 'rgba(0, 0, 0, 0.6)',
+                            width: 2,
+                            errorValues: model1ErrorValues
+                        }
                     },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            title: {
-                                display: true,
-                                text: `${state.selectedMetric} Comparison for ${group.name} (${selectedMethod})`,
-                                font: {
-                                    size: 16
+                    {
+                        label: model2,
+                        data: model2Data,
+                        backgroundColor: 'rgba(236, 72, 153, 0.7)',
+                        borderColor: 'rgba(236, 72, 153, 1)',
+                        borderWidth: 1,
+                        // Add error bar data
+                        errorBars: {
+                            show: true,
+                            color: 'rgba(0, 0, 0, 0.6)',
+                            width: 2,
+                            errorValues: model2ErrorValues
+                        }
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: `${state.selectedMetric} Comparison (${selectedMethod})`,
+                        font: {
+                            size: 16
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            afterBody: function(tooltipItems) {
+                                const index = tooltipItems[0].dataIndex;
+                                const dataset = labels[index];
+                                const datasetIndex = tooltipItems[0].datasetIndex;
+                                const model = datasetIndex === 0 ? model1 : model2;
+                                const value = datasetIndex === 0 ? model1Data[index] : model2Data[index];
+                                const ciField = state.selectedMetric === 'F1 Score' ? 'F1 Score Confidence Interval' : 'ROC AUC Confidence Interval';
+                                const ci = state.data[model][selectedMethod][dataset][ciField];
+                                
+                                let result = '';
+                                
+                                if (ci) {
+                                    result += `95% CI: [${ci[0].toFixed(4)}, ${ci[1].toFixed(4)}]\n`;
                                 }
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    afterBody: function(tooltipItems) {
-                                        const diff = model1Value - model2Value;
-                                        return `Difference: ${diff.toFixed(4)}`;
-                                    }
+                                
+                                if (datasetIndex === 1) {
+                                    const diff = model1Data[index] - model2Data[index];
+                                    result += `Difference: ${diff.toFixed(4)}`;
                                 }
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: false,
-                                min: Math.max(0.5, Math.min(...sortedModel1Data, ...sortedModel2Data) - 0.1),
-                                max: Math.min(1.0, Math.max(...sortedModel1Data, ...sortedModel2Data) + 0.1),
-                                title: {
-                                    display: true,
-                                    text: state.selectedMetric
-                                }
-                            },
-                            x: {
-                                title: {
-                                    display: true,
-                                    text: 'Datasets'
-                                },
-                                ticks: {
-                                    maxRotation: 45,
-                                    minRotation: 45
-                                }
+                                
+                                return result;
                             }
                         }
                     }
-                });
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        min: Math.max(0.5, Math.min(...model1Data, ...model2Data) - 0.1),
+                        max: Math.min(1.0, Math.max(...model1Data, ...model2Data) + 0.1),
+                        title: {
+                            display: true,
+                            text: state.selectedMetric
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Datasets'
+                        },
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45
+                        }
+                    }
+                }
             }
-        }
+        });
+    }
+}
         
         // Render the table visualization
         function renderTableView() {
