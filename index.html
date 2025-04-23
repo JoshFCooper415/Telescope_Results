@@ -383,6 +383,198 @@
             font-size: 0.875rem;
             background-color: var(--panel-color);
         }
+        
+        /* Dataset group styles */
+        .dataset-group {
+            background-color: var(--highlight-color);
+            border-radius: 0.375rem;
+            padding: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        
+        .dataset-group-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        
+        .dataset-group-title {
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+        
+        .dataset-group-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .dataset-group-action {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 0.75rem;
+            color: var(--primary-color);
+        }
+        
+        .dataset-group-members {
+            font-size: 0.75rem;
+            color: var(--text-light);
+        }
+        
+        .group-selector {
+            margin-bottom: 1rem;
+        }
+        
+        .create-group-button {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background-color: var(--primary-light);
+            color: white;
+            border: none;
+            border-radius: 0.375rem;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.875rem;
+            cursor: pointer;
+            margin-bottom: 1rem;
+            width: 100%;
+        }
+        
+        .create-group-button:hover {
+            background-color: var(--primary-color);
+        }
+        
+        .create-group-form {
+            background-color: var(--highlight-color);
+            border-radius: 0.375rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .form-group {
+            margin-bottom: 0.75rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.25rem;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+        }
+        
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+        }
+        
+        .form-actions button {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.875rem;
+            border-radius: 0.375rem;
+            cursor: pointer;
+        }
+        
+        .cancel-button {
+            background-color: var(--panel-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+        }
+        
+        .save-group-button {
+            background-color: var(--primary-color);
+            border: none;
+            color: white;
+        }
+        
+        /* Modal for dataset group creation */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .modal {
+            background-color: var(--panel-color);
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-light);
+        }
+        
+        .modal-body {
+            margin-bottom: 1.5rem;
+        }
+        
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+        }
+        
+        .dataset-list-modal {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+            padding: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+        
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            background-color: var(--highlight-color);
+            border-radius: 1rem;
+            padding: 0.25rem 0.5rem;
+            margin-right: 0.25rem;
+            margin-bottom: 0.25rem;
+            font-size: 0.75rem;
+        }
+        
+        .chip-remove {
+            background: none;
+            border: none;
+            margin-left: 0.25rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+            color: var(--text-light);
+        }
     </style>
 </head>
 <body>
@@ -438,6 +630,17 @@
                     </div>
                 </div>
                 
+                <!-- Dataset Groups Section -->
+                <div class="control-group">
+                    <h3>Dataset Groups</h3>
+                    <button id="create-group-button" class="create-group-button">
+                        <span>+</span> Create Dataset Group
+                    </button>
+                    <div id="dataset-groups-container">
+                        <!-- Will be populated dynamically -->
+                    </div>
+                </div>
+                
                 <div class="control-group">
                     <h3>Metrics</h3>
                     <div class="radio-group">
@@ -479,6 +682,43 @@
             </div>
         </div>
     </div>
+    
+    <!-- Modal for creating dataset groups -->
+    <div id="create-group-modal" class="modal-overlay" style="display: none;">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Create Dataset Group</h3>
+                <button class="modal-close" id="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="group-name">Group Name</label>
+                    <input type="text" id="group-name" placeholder="Enter a name for this group">
+                </div>
+                
+                <div class="form-group">
+                    <label>Select Datasets</label>
+                    <div class="search-box">
+                        <input type="text" id="group-dataset-search" placeholder="Search datasets...">
+                    </div>
+                    <div class="dataset-list-modal" id="group-dataset-list">
+                        <!-- Will be populated dynamically -->
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Selected Datasets</label>
+                    <div id="selected-datasets-container">
+                        <!-- Will be populated dynamically -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="cancel-create-group" class="cancel-button">Cancel</button>
+                <button id="save-dataset-group" class="primary-button">Create Group</button>
+            </div>
+        </div>
+    </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script>
@@ -488,22 +728,30 @@
             selectedMethods: [],
             selectedModels: [],
             selectedDatasets: [],
+            datasetGroups: [], // Array of {name, datasets} objects
             selectedMetric: 'F1 Score',
             currentView: 'overview',
             charts: {},
+            editingGroupId: null, // For tracking which group is being edited
             viewSpecificState: {
                 overview: {
                     groupBy: 'none', // 'none', 'family', 'size', 'method'
-                    sortBy: 'performance-desc' // 'alphabetical', 'performance-desc', 'performance-asc'
+                    sortBy: 'performance-desc', // 'alphabetical', 'performance-desc', 'performance-asc'
+                    useDatasetGroup: false, // Whether to use dataset groups
+                    selectedDatasetGroup: null // Selected dataset group
                 },
                 comparison: {
                     models: [], // Exactly 2 models for comparison
-                    sortBy: 'performance-desc' // 'alphabetical', 'performance-desc', 'performance-asc', 'difference-desc'
+                    sortBy: 'performance-desc', // 'alphabetical', 'performance-desc', 'performance-asc', 'difference-desc'
+                    useDatasetGroup: false, // Whether to use dataset groups
+                    selectedDatasetGroup: null // Selected dataset group
                 },
                 table: {
                     model: null,
                     method: null,
-                    sortBy: 'f1-desc' // 'alphabetical', 'f1-desc', 'f1-asc', 'auroc-desc', 'auroc-asc'
+                    sortBy: 'f1-desc', // 'alphabetical', 'f1-desc', 'f1-asc', 'auroc-desc', 'auroc-asc'
+                    useDatasetGroup: false, // Whether to use dataset groups
+                    selectedDatasetGroup: null // Selected dataset group
                 }
             }
         };
@@ -567,6 +815,31 @@
             state.selectedModels = [...allModels];
             state.selectedDatasets = [...allDatasets];
             
+            // Create some default dataset groups
+            state.datasetGroups = [
+                {
+                    id: 'all-datasets',
+                    name: 'All Datasets',
+                    datasets: [...allDatasets].filter(d => allDatasets.has(d))
+                },
+                {
+                    id: 'standard-datasets',
+                    name: 'Standard Datasets',
+                    datasets: ['essay', 'hc3', 'hc3_plus'].filter(d => allDatasets.has(d))
+                },
+                {
+                    id: 'non-standard-datasets',
+                    name: 'Non Standard Datasets',
+                    datasets: [ 'ai_human', 'custom4o'].filter(d => allDatasets.has(d))
+                },
+                {
+                    id: 'ghostbusters-datasets',
+                    name: 'Ghostbusters Datasets',
+                    datasets: [...allDatasets].filter(d => d.startsWith('ghostbusters_'))
+                }
+                
+            ];
+            
             // Populate Detection Methods list
             populateCheckboxList('method-list', [...allMethods], state.selectedMethods);
             
@@ -575,6 +848,9 @@
             
             // Populate Datasets list
             populateCheckboxList('dataset-list', sortDatasets([...allDatasets]), state.selectedDatasets);
+            
+            // Populate Dataset Groups
+            renderDatasetGroups();
             
             // Update selection summary
             updateSelectionSummary();
@@ -616,6 +892,173 @@
                 const label = document.createElement('label');
                 label.htmlFor = checkbox.id;
                 label.textContent = item;
+                
+                itemDiv.appendChild(checkbox);
+                itemDiv.appendChild(label);
+                listElement.appendChild(itemDiv);
+            });
+        }
+        
+        // Render dataset groups
+        function renderDatasetGroups() {
+            const container = document.getElementById('dataset-groups-container');
+            container.innerHTML = '';
+            
+            state.datasetGroups.forEach(group => {
+                const groupDiv = document.createElement('div');
+                groupDiv.className = 'dataset-group';
+                groupDiv.dataset.groupId = group.id;
+                
+                const headerDiv = document.createElement('div');
+                headerDiv.className = 'dataset-group-header';
+                
+                const titleSpan = document.createElement('span');
+                titleSpan.className = 'dataset-group-title';
+                titleSpan.textContent = group.name;
+                
+                const actionsDiv = document.createElement('div');
+                actionsDiv.className = 'dataset-group-actions';
+                
+                const editButton = document.createElement('button');
+                editButton.className = 'dataset-group-action';
+                editButton.textContent = 'Edit';
+                editButton.addEventListener('click', () => {
+                    editDatasetGroup(group.id);
+                });
+                
+                const deleteButton = document.createElement('button');
+                deleteButton.className = 'dataset-group-action';
+                deleteButton.textContent = 'Delete';
+                deleteButton.addEventListener('click', () => {
+                    deleteDatasetGroup(group.id);
+                });
+                
+                actionsDiv.appendChild(editButton);
+                actionsDiv.appendChild(deleteButton);
+                
+                headerDiv.appendChild(titleSpan);
+                headerDiv.appendChild(actionsDiv);
+                
+                const membersDiv = document.createElement('div');
+                membersDiv.className = 'dataset-group-members';
+                membersDiv.textContent = `${group.datasets.length} datasets: ${group.datasets.slice(0, 3).join(', ')}${group.datasets.length > 3 ? '...' : ''}`;
+                
+                groupDiv.appendChild(headerDiv);
+                groupDiv.appendChild(membersDiv);
+                
+                container.appendChild(groupDiv);
+            });
+        }
+        
+        // Edit dataset group
+        function editDatasetGroup(groupId) {
+            const group = state.datasetGroups.find(g => g.id === groupId);
+            if (!group) return;
+            
+            state.editingGroupId = groupId;
+            
+            // Populate the modal with the group data
+            document.getElementById('group-name').value = group.name;
+            
+            // Reset selected datasets in the modal
+            const selectedDatasetsContainer = document.getElementById('selected-datasets-container');
+            selectedDatasetsContainer.innerHTML = '';
+            
+            // Populate group datasets list
+            populateGroupDatasetsList();
+            
+            // Show modal
+            document.getElementById('create-group-modal').style.display = 'flex';
+            document.querySelector('.modal-title').textContent = 'Edit Dataset Group';
+            document.getElementById('save-dataset-group').textContent = 'Update Group';
+            
+            // Check the checkboxes for datasets in this group
+            group.datasets.forEach(dataset => {
+                const checkbox = document.getElementById(`group-dataset-list-${dataset}`);
+                if (checkbox) {
+                    checkbox.checked = true;
+                    addSelectedDatasetChip(dataset);
+                }
+            });
+        }
+        
+        // Delete dataset group
+        function deleteDatasetGroup(groupId) {
+            if (confirm('Are you sure you want to delete this dataset group?')) {
+                state.datasetGroups = state.datasetGroups.filter(g => g.id !== groupId);
+                renderDatasetGroups();
+                
+                // Update view controls if the deleted group was selected
+                ['overview', 'comparison', 'table'].forEach(view => {
+                    if (state.viewSpecificState[view].selectedDatasetGroup === groupId) {
+                        state.viewSpecificState[view].selectedDatasetGroup = null;
+                        state.viewSpecificState[view].useDatasetGroup = false;
+                    }
+                });
+                
+                updateViewControls();
+            }
+        }
+        
+        // Add a selected dataset chip to the modal
+        function addSelectedDatasetChip(dataset) {
+            const container = document.getElementById('selected-datasets-container');
+            
+            // Check if this dataset chip already exists
+            if (document.querySelector(`.chip[data-dataset="${dataset}"]`)) {
+                return;
+            }
+            
+            const chip = document.createElement('span');
+            chip.className = 'chip';
+            chip.dataset.dataset = dataset;
+            chip.textContent = dataset;
+            
+            const removeButton = document.createElement('button');
+            removeButton.className = 'chip-remove';
+            removeButton.innerHTML = '&times;';
+            removeButton.addEventListener('click', function() {
+                chip.remove();
+                // Uncheck the corresponding checkbox
+                const checkbox = document.getElementById(`group-dataset-list-${dataset}`);
+                if (checkbox) {
+                    checkbox.checked = false;
+                }
+            });
+            
+            chip.appendChild(removeButton);
+            container.appendChild(chip);
+        }
+        
+        // Populate the datasets list in the group creation modal
+        function populateGroupDatasetsList() {
+            const listElement = document.getElementById('group-dataset-list');
+            listElement.innerHTML = '';
+            
+            const sortedDatasets = sortDatasets([...state.selectedDatasets]);
+            
+            sortedDatasets.forEach(dataset => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'selection-item';
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = `group-dataset-list-${dataset}`;
+                checkbox.value = dataset;
+                checkbox.addEventListener('change', function() {
+                    if (this.checked) {
+                        addSelectedDatasetChip(dataset);
+                    } else {
+                        const chip = document.querySelector(`.chip[data-dataset="${dataset}"]`);
+                        if (chip) {
+                            chip.remove();
+                        }
+                    }
+                });
+                
+                const label = document.createElement('label');
+                label.htmlFor = checkbox.id;
+                label.textContent = dataset;
                 
                 itemDiv.appendChild(checkbox);
                 itemDiv.appendChild(label);
@@ -670,6 +1113,10 @@
                 filterOptions('dataset-list', this.value);
             });
             
+            document.getElementById('group-dataset-search').addEventListener('input', function() {
+                filterOptions('group-dataset-list', this.value);
+            });
+            
             // Select/Clear All buttons
             document.getElementById('select-all-methods').addEventListener('click', function() {
                 selectAll('method-list', true);
@@ -720,6 +1167,79 @@
             
             // Update visualization button
             document.getElementById('update-viz').addEventListener('click', updateVisualization);
+            
+            // Dataset group creation
+            document.getElementById('create-group-button').addEventListener('click', function() {
+                // Reset the modal
+                state.editingGroupId = null;
+                document.getElementById('group-name').value = '';
+                document.getElementById('selected-datasets-container').innerHTML = '';
+                
+                // Populate datasets list
+                populateGroupDatasetsList();
+                
+                // Reset all checkboxes
+                document.querySelectorAll('#group-dataset-list input[type="checkbox"]').forEach(checkbox => {
+                    checkbox.checked = false;
+                });
+                
+                // Show modal
+                document.getElementById('create-group-modal').style.display = 'flex';
+                document.querySelector('.modal-title').textContent = 'Create Dataset Group';
+                document.getElementById('save-dataset-group').textContent = 'Create Group';
+            });
+            
+            // Modal close button
+            document.getElementById('close-modal').addEventListener('click', function() {
+                document.getElementById('create-group-modal').style.display = 'none';
+            });
+            
+            // Cancel create group button
+            document.getElementById('cancel-create-group').addEventListener('click', function() {
+                document.getElementById('create-group-modal').style.display = 'none';
+            });
+            
+            // Save dataset group button
+            document.getElementById('save-dataset-group').addEventListener('click', function() {
+                const groupName = document.getElementById('group-name').value.trim();
+                if (!groupName) {
+                    alert('Please enter a name for the dataset group');
+                    return;
+                }
+                
+                // Get selected datasets
+                const selectedDatasets = Array.from(document.querySelectorAll('#selected-datasets-container .chip'))
+                    .map(chip => chip.dataset.dataset);
+                
+                if (selectedDatasets.length === 0) {
+                    alert('Please select at least one dataset for the group');
+                    return;
+                }
+                
+                if (state.editingGroupId) {
+                    // Update existing group
+                    const groupIndex = state.datasetGroups.findIndex(g => g.id === state.editingGroupId);
+                    if (groupIndex !== -1) {
+                        state.datasetGroups[groupIndex].name = groupName;
+                        state.datasetGroups[groupIndex].datasets = selectedDatasets;
+                    }
+                } else {
+                    // Create new group
+                    const groupId = 'group-' + Date.now();
+                    state.datasetGroups.push({
+                        id: groupId,
+                        name: groupName,
+                        datasets: selectedDatasets
+                    });
+                }
+                
+                // Update UI
+                renderDatasetGroups();
+                updateViewControls();
+                
+                // Close modal
+                document.getElementById('create-group-modal').style.display = 'none';
+            });
         }
         
         // Change the current view
@@ -749,6 +1269,129 @@
                 // Overview controls
                 const controls = document.createElement('div');
                 controls.className = 'plot-options';
+                
+                // Dataset or dataset group selector
+                const dataSourceContainer = document.createElement('div');
+                dataSourceContainer.className = 'plot-option';
+                
+                const dataSourceLabel = document.createElement('label');
+                dataSourceLabel.htmlFor = 'overview-data-source';
+                dataSourceLabel.textContent = 'Data Source:';
+                
+                const dataSourceSelect = document.createElement('select');
+                dataSourceSelect.id = 'overview-data-source';
+                
+                // Add single dataset option
+                const singleOption = document.createElement('option');
+                singleOption.value = 'single';
+                singleOption.textContent = 'Single Dataset';
+                singleOption.selected = !state.viewSpecificState.overview.useDatasetGroup;
+                dataSourceSelect.appendChild(singleOption);
+                
+                // Add dataset group option if there are groups
+                if (state.datasetGroups.length > 0) {
+                    const groupOption = document.createElement('option');
+                    groupOption.value = 'group';
+                    groupOption.textContent = 'Dataset Group';
+                    groupOption.selected = state.viewSpecificState.overview.useDatasetGroup;
+                    dataSourceSelect.appendChild(groupOption);
+                }
+                
+                dataSourceSelect.addEventListener('change', function() {
+                    state.viewSpecificState.overview.useDatasetGroup = this.value === 'group';
+                    updateViewControls();
+                });
+                
+                dataSourceContainer.appendChild(dataSourceLabel);
+                dataSourceContainer.appendChild(dataSourceSelect);
+                
+                // Dataset or group selector
+                let datasetsContainer;
+                if (state.viewSpecificState.overview.useDatasetGroup) {
+                    // Dataset group selector
+                    datasetsContainer = document.createElement('div');
+                    datasetsContainer.className = 'plot-option';
+                    
+                    const groupLabel = document.createElement('label');
+                    groupLabel.htmlFor = 'overview-dataset-group';
+                    groupLabel.textContent = 'Dataset Group:';
+                    
+                    const groupSelect = document.createElement('select');
+                    groupSelect.id = 'overview-dataset-group';
+                    
+                    state.datasetGroups.forEach(group => {
+                        const option = document.createElement('option');
+                        option.value = group.id;
+                        option.textContent = group.name;
+                        if (state.viewSpecificState.overview.selectedDatasetGroup === group.id) {
+                            option.selected = true;
+                        }
+                        groupSelect.appendChild(option);
+                    });
+                    
+                    groupSelect.addEventListener('change', function() {
+                        state.viewSpecificState.overview.selectedDatasetGroup = this.value;
+                        updateVisualization();
+                    });
+                    
+                    datasetsContainer.appendChild(groupLabel);
+                    datasetsContainer.appendChild(groupSelect);
+                    
+                    // Set default selected group if none is selected
+                    if (!state.viewSpecificState.overview.selectedDatasetGroup && state.datasetGroups.length > 0) {
+                        state.viewSpecificState.overview.selectedDatasetGroup = state.datasetGroups[0].id;
+                    }
+                } else {
+                    // Single dataset selector
+                    datasetsContainer = document.createElement('div');
+                    datasetsContainer.className = 'plot-option';
+                    
+                    const datasetLabel = document.createElement('label');
+                    datasetLabel.htmlFor = 'overview-dataset';
+                    datasetLabel.textContent = 'Dataset:';
+                    
+                    const datasetSelect = document.createElement('select');
+                    datasetSelect.id = 'overview-dataset';
+                    
+                    // Collect datasets that have data with current selections
+                    const availableDatasets = new Set();
+                    
+                    state.selectedModels.forEach(model => {
+                        state.selectedMethods.forEach(method => {
+                            if (state.data[model] && state.data[model][method]) {
+                                Object.keys(state.data[model][method]).forEach(dataset => {
+                                    if (state.selectedDatasets.includes(dataset)) {
+                                        availableDatasets.add(dataset);
+                                    }
+                                });
+                            }
+                        });
+                    });
+                    
+                    // Sort and add datasets to selector
+                    const sortedDatasets = sortDatasets([...availableDatasets]);
+                    
+                    sortedDatasets.forEach(dataset => {
+                        const optionElement = document.createElement('option');
+                        optionElement.value = dataset;
+                        
+                        // Format ghostbusters datasets
+                        if (dataset.startsWith('ghostbusters_')) {
+                            optionElement.textContent = dataset.replace('ghostbusters_', 'GB: ').replace(/_/g, ' ');
+                        } else {
+                            optionElement.textContent = dataset;
+                        }
+                        
+                        datasetSelect.appendChild(optionElement);
+                    });
+                    
+                    datasetSelect.addEventListener('change', function() {
+                        updateVisualization();
+                    });
+                    
+                    datasetsContainer.appendChild(datasetLabel);
+                    datasetsContainer.appendChild(datasetSelect);
+                }
                 
                 // Group by
                 const groupByContainer = document.createElement('div');
@@ -821,66 +1464,93 @@
                 sortByContainer.appendChild(sortByLabel);
                 sortByContainer.appendChild(sortBySelect);
                 
-                // Dataset selector
-                const datasetContainer = document.createElement('div');
-                datasetContainer.className = 'plot-option';
-                
-                const datasetLabel = document.createElement('label');
-                datasetLabel.htmlFor = 'overview-dataset';
-                datasetLabel.textContent = 'Dataset:';
-                
-                const datasetSelect = document.createElement('select');
-                datasetSelect.id = 'overview-dataset';
-                
-                // Collect datasets that have data with current selections
-                const availableDatasets = new Set();
-                
-                state.selectedModels.forEach(model => {
-                    state.selectedMethods.forEach(method => {
-                        if (state.data[model] && state.data[model][method]) {
-                            Object.keys(state.data[model][method]).forEach(dataset => {
-                                if (state.selectedDatasets.includes(dataset)) {
-                                    availableDatasets.add(dataset);
-                                }
-                            });
-                        }
-                    });
-                });
-                
-                // Sort and add datasets to selector
-                const sortedDatasets = sortDatasets([...availableDatasets]);
-                
-                sortedDatasets.forEach(dataset => {
-                    const optionElement = document.createElement('option');
-                    optionElement.value = dataset;
-                    
-                    // Format ghostbusters datasets
-                    if (dataset.startsWith('ghostbusters_')) {
-                        optionElement.textContent = dataset.replace('ghostbusters_', 'GB: ').replace(/_/g, ' ');
-                    } else {
-                        optionElement.textContent = dataset;
-                    }
-                    
-                    datasetSelect.appendChild(optionElement);
-                });
-                
-                datasetSelect.addEventListener('change', function() {
-                    updateVisualization();
-                });
-                
-                datasetContainer.appendChild(datasetLabel);
-                datasetContainer.appendChild(datasetSelect);
-                
                 // Add all controls
+                controls.appendChild(dataSourceContainer);
+                controls.appendChild(datasetsContainer);
                 controls.appendChild(groupByContainer);
                 controls.appendChild(sortByContainer);
-                controls.appendChild(datasetContainer);
                 
                 controlsContainer.appendChild(controls);
             } else if (state.currentView === 'comparison') {
                 // Comparison controls
                 const controls = document.createElement('div');
                 controls.className = 'plot-options';
+                
+                // Data source selection (single dataset or dataset group)
+                const dataSourceContainer = document.createElement('div');
+                dataSourceContainer.className = 'plot-option';
+                
+                const dataSourceLabel = document.createElement('label');
+                dataSourceLabel.htmlFor = 'comparison-data-source';
+                dataSourceLabel.textContent = 'Data Source:';
+                
+                const dataSourceSelect = document.createElement('select');
+                dataSourceSelect.id = 'comparison-data-source';
+                
+                // Add single dataset option
+                const singleOption = document.createElement('option');
+                singleOption.value = 'single';
+                singleOption.textContent = 'Individual Datasets';
+                singleOption.selected = !state.viewSpecificState.comparison.useDatasetGroup;
+                dataSourceSelect.appendChild(singleOption);
+                
+                // Add dataset group option if there are groups
+                if (state.datasetGroups.length > 0) {
+                    const groupOption = document.createElement('option');
+                    groupOption.value = 'group';
+                    groupOption.textContent = 'Dataset Group';
+                    groupOption.selected = state.viewSpecificState.comparison.useDatasetGroup;
+                    dataSourceSelect.appendChild(groupOption);
+                }
+                
+                dataSourceSelect.addEventListener('change', function() {
+                    state.viewSpecificState.comparison.useDatasetGroup = this.value === 'group';
+                    updateViewControls();
+                });
+                
+                dataSourceContainer.appendChild(dataSourceLabel);
+                dataSourceContainer.appendChild(dataSourceSelect);
+                
+                // Group selector if using groups
+                let datasetContainer;
+                if (state.viewSpecificState.comparison.useDatasetGroup) {
+                    datasetContainer = document.createElement('div');
+                    datasetContainer.className = 'plot-option';
+                    
+                    const groupLabel = document.createElement('label');
+                    groupLabel.htmlFor = 'comparison-dataset-group';
+                    groupLabel.textContent = 'Dataset Group:';
+                    
+                    const groupSelect = document.createElement('select');
+                    groupSelect.id = 'comparison-dataset-group';
+                    
+                    state.datasetGroups.forEach(group => {
+                        const option = document.createElement('option');
+                        option.value = group.id;
+                        option.textContent = group.name;
+                        if (state.viewSpecificState.comparison.selectedDatasetGroup === group.id) {
+                            option.selected = true;
+                        }
+                        groupSelect.appendChild(option);
+                    });
+                    
+                    groupSelect.addEventListener('change', function() {
+                        state.viewSpecificState.comparison.selectedDatasetGroup = this.value;
+                        updateVisualization();
+                    });
+                    
+                    datasetContainer.appendChild(groupLabel);
+                    datasetContainer.appendChild(groupSelect);
+                    
+                    // Set default selected group if none is selected
+                    if (!state.viewSpecificState.comparison.selectedDatasetGroup && state.datasetGroups.length > 0) {
+                        state.viewSpecificState.comparison.selectedDatasetGroup = state.datasetGroups[0].id;
+                    }
+                } else {
+                    // If not using groups, don't add a dataset selection (datasets will be shown in comparison chart)
+                    datasetContainer = document.createElement('div');
+                    datasetContainer.style.display = 'none';
+                }
                 
                 // Model 1 selector
                 const model1Container = document.createElement('div');
@@ -909,8 +1579,15 @@
                     return state.selectedMethods.some(method => 
                         state.data[model] && 
                         state.data[model][method] &&
-                        Object.keys(state.data[model][method]).some(dataset => 
-                            state.selectedDatasets.includes(dataset)
+                        (state.viewSpecificState.comparison.useDatasetGroup ? 
+                            // If using dataset group, check if model has data for any dataset in the group
+                            state.datasetGroups.find(g => g.id === state.viewSpecificState.comparison.selectedDatasetGroup)?.datasets.some(dataset => 
+                                state.data[model][method][dataset]
+                            ) :
+                            // Otherwise check if model has data for any selected dataset
+                            Object.keys(state.data[model][method]).some(dataset => 
+                                state.selectedDatasets.includes(dataset)
+                            )
                         )
                     );
                 }).sort();
@@ -1008,6 +1685,13 @@
                 });
                 
                 // Add all controls
+                controls.appendChild(dataSourceContainer);
+                controls.appendChild(datasetContainer);
+                controls.appendChild(model1Container);
+                controls.appendChild(model2Container);
+                controls.appendChild(methodContainer);
+                controls.appendChild(sortByContainer);
+                
                 model1Container.appendChild(model1Label);
                 model1Container.appendChild(model1Select);
                 
@@ -1020,11 +1704,6 @@
                 sortByContainer.appendChild(sortByLabel);
                 sortByContainer.appendChild(sortBySelect);
                 
-                controls.appendChild(model1Container);
-                controls.appendChild(model2Container);
-                controls.appendChild(methodContainer);
-                controls.appendChild(sortByContainer);
-                
                 controlsContainer.appendChild(controls);
                 
                 // Initialize comparison models if needed
@@ -1035,6 +1714,82 @@
                 // Table controls
                 const controls = document.createElement('div');
                 controls.className = 'plot-options';
+                
+                // Data source selection (single dataset or dataset group)
+                const dataSourceContainer = document.createElement('div');
+                dataSourceContainer.className = 'plot-option';
+                
+                const dataSourceLabel = document.createElement('label');
+                dataSourceLabel.htmlFor = 'table-data-source';
+                dataSourceLabel.textContent = 'Data Source:';
+                
+                const dataSourceSelect = document.createElement('select');
+                dataSourceSelect.id = 'table-data-source';
+                
+                // Add single dataset option
+                const singleOption = document.createElement('option');
+                singleOption.value = 'single';
+                singleOption.textContent = 'Individual Datasets';
+                singleOption.selected = !state.viewSpecificState.table.useDatasetGroup;
+                dataSourceSelect.appendChild(singleOption);
+                
+                // Add dataset group option if there are groups
+                if (state.datasetGroups.length > 0) {
+                    const groupOption = document.createElement('option');
+                    groupOption.value = 'group';
+                    groupOption.textContent = 'Dataset Group';
+                    groupOption.selected = state.viewSpecificState.table.useDatasetGroup;
+                    dataSourceSelect.appendChild(groupOption);
+                }
+                
+                dataSourceSelect.addEventListener('change', function() {
+                    state.viewSpecificState.table.useDatasetGroup = this.value === 'group';
+                    updateViewControls();
+                });
+                
+                dataSourceContainer.appendChild(dataSourceLabel);
+                dataSourceContainer.appendChild(dataSourceSelect);
+                
+                // Group selector if using groups
+                let datasetContainer;
+                if (state.viewSpecificState.table.useDatasetGroup) {
+                    datasetContainer = document.createElement('div');
+                    datasetContainer.className = 'plot-option';
+                    
+                    const groupLabel = document.createElement('label');
+                    groupLabel.htmlFor = 'table-dataset-group';
+                    groupLabel.textContent = 'Dataset Group:';
+                    
+                    const groupSelect = document.createElement('select');
+                    groupSelect.id = 'table-dataset-group';
+                    
+                    state.datasetGroups.forEach(group => {
+                        const option = document.createElement('option');
+                        option.value = group.id;
+                        option.textContent = group.name;
+                        if (state.viewSpecificState.table.selectedDatasetGroup === group.id) {
+                            option.selected = true;
+                        }
+                        groupSelect.appendChild(option);
+                    });
+                    
+                    groupSelect.addEventListener('change', function() {
+                        state.viewSpecificState.table.selectedDatasetGroup = this.value;
+                        updateVisualization();
+                    });
+                    
+                    datasetContainer.appendChild(groupLabel);
+                    datasetContainer.appendChild(groupSelect);
+                    
+                    // Set default selected group if none is selected
+                    if (!state.viewSpecificState.table.selectedDatasetGroup && state.datasetGroups.length > 0) {
+                        state.viewSpecificState.table.selectedDatasetGroup = state.datasetGroups[0].id;
+                    }
+                } else {
+                    // If not using groups, we still show individual datasets in the table
+                    datasetContainer = document.createElement('div');
+                    datasetContainer.style.display = 'none';
+                }
                 
                 // Model selector
                 const modelContainer = document.createElement('div');
@@ -1052,8 +1807,15 @@
                     return state.selectedMethods.some(method => 
                         state.data[model] && 
                         state.data[model][method] &&
-                        Object.keys(state.data[model][method]).some(dataset => 
-                            state.selectedDatasets.includes(dataset)
+                        (state.viewSpecificState.table.useDatasetGroup ?
+                            // If using dataset group, check if model has data for any dataset in the group
+                            state.datasetGroups.find(g => g.id === state.viewSpecificState.table.selectedDatasetGroup)?.datasets.some(dataset => 
+                                state.data[model][method][dataset]
+                            ) :
+                            // Otherwise check if model has data for any selected dataset
+                            Object.keys(state.data[model][method]).some(dataset => 
+                                state.selectedDatasets.includes(dataset)
+                            )
                         )
                     );
                 }).sort();
@@ -1144,6 +1906,8 @@
                 sortByContainer.appendChild(sortByLabel);
                 sortByContainer.appendChild(sortBySelect);
                 
+                controls.appendChild(dataSourceContainer);
+                controls.appendChild(datasetContainer);
                 controls.appendChild(modelContainer);
                 controls.appendChild(methodContainer);
                 controls.appendChild(sortByContainer);
@@ -1170,6 +1934,7 @@
             summary += `${state.selectedMethods.length} method(s), `;
             summary += `${state.selectedModels.length} model(s), `;
             summary += `${state.selectedDatasets.length} dataset(s), `;
+            summary += `${state.datasetGroups.length} group(s), `;
             summary += `metric: ${state.selectedMetric}`;
             
             summaryElement.textContent = summary;
@@ -1220,8 +1985,13 @@
             }
             
             // Check if we have valid selections
-            if (state.selectedMethods.length === 0 || state.selectedModels.length === 0 || state.selectedDatasets.length === 0) {
-                showError('Please select at least one method, model, and dataset to visualize.');
+            if (state.selectedMethods.length === 0 || state.selectedModels.length === 0) {
+                showError('Please select at least one method and model to visualize.');
+                return;
+            }
+            
+            if (!state.viewSpecificState[state.currentView].useDatasetGroup && state.selectedDatasets.length === 0) {
+                showError('Please select at least one dataset to visualize.');
                 return;
             }
             
@@ -1235,38 +2005,109 @@
             }
         }
         
+        // Get datasets for the current view
+        function getDatasetsForView(view) {
+            if (state.viewSpecificState[view].useDatasetGroup) {
+                const groupId = state.viewSpecificState[view].selectedDatasetGroup;
+                const group = state.datasetGroups.find(g => g.id === groupId);
+                return group ? group.datasets : [];
+            } else {
+                return state.selectedDatasets;
+            }
+        }
+        
+        // Aggregate metrics across multiple datasets
+        function aggregateMetrics(model, method, datasets, metricName) {
+            let validDatasets = 0;
+            let sum = 0;
+            
+            datasets.forEach(dataset => {
+                if (state.data[model] && 
+                    state.data[model][method] && 
+                    state.data[model][method][dataset]) {
+                    sum += state.data[model][method][dataset][metricName];
+                    validDatasets++;
+                }
+            });
+            
+            return validDatasets > 0 ? sum / validDatasets : null;
+        }
+        
+        // Aggregate confidence intervals across multiple datasets
+        function aggregateConfidenceIntervals(model, method, datasets, metricName) {
+            let validDatasets = 0;
+            let sumLow = 0;
+            let sumHigh = 0;
+            
+            const ciField = metricName === 'F1 Score' ? 'F1 Score Confidence Interval' : 'ROC AUC Confidence Interval';
+            
+            datasets.forEach(dataset => {
+                if (state.data[model] && 
+                    state.data[model][method] && 
+                    state.data[model][method][dataset] &&
+                    state.data[model][method][dataset][ciField]) {
+                    sumLow += state.data[model][method][dataset][ciField][0];
+                    sumHigh += state.data[model][method][dataset][ciField][1];
+                    validDatasets++;
+                }
+            });
+            
+            return validDatasets > 0 ? [sumLow / validDatasets, sumHigh / validDatasets] : null;
+        }
+        
         // Render the overview visualization
         function renderOverviewView() {
             const vizContent = document.getElementById('visualization-content');
             
-            // Get selected dataset
-            const datasetSelect = document.getElementById('overview-dataset');
-            const selectedDataset = datasetSelect.value;
+            // Get datasets for this view
+            const datasetsForView = getDatasetsForView('overview');
             
-            if (!selectedDataset) {
-                showError('No dataset selected or available with current filters.');
+            if (datasetsForView.length === 0) {
+                showError('No datasets available with current selections.');
                 return;
+            }
+            
+            // If not using dataset groups, get the selected single dataset
+            let selectedDataset = null;
+            if (!state.viewSpecificState.overview.useDatasetGroup) {
+                const datasetSelect = document.getElementById('overview-dataset');
+                selectedDataset = datasetSelect.value;
+                
+                if (!selectedDataset) {
+                    showError('No dataset selected or available with current filters.');
+                    return;
+                }
             }
             
             // Get settings
             const groupBy = state.viewSpecificState.overview.groupBy;
             const sortBy = state.viewSpecificState.overview.sortBy;
             
-            // Get models and methods that have data for this dataset
+            // Get models and methods that have data
             const validPairs = [];
             
             state.selectedModels.forEach(model => {
                 state.selectedMethods.forEach(method => {
-                    if (state.data[model] && 
+                    if (state.viewSpecificState.overview.useDatasetGroup) {
+                        // For dataset groups, check if the model/method has data for any dataset in the group
+                        const value = aggregateMetrics(model, method, datasetsForView, state.selectedMetric);
+                        if (value !== null) {
+                            validPairs.push({ model, method, value });
+                        }
+                    } else if (state.data[model] && 
                         state.data[model][method] && 
                         state.data[model][method][selectedDataset]) {
-                        validPairs.push({ model, method });
+                        validPairs.push({ 
+                            model, 
+                            method, 
+                            value: state.data[model][method][selectedDataset][state.selectedMetric] 
+                        });
                     }
                 });
             });
             
             if (validPairs.length === 0) {
-                showError('No data available for the selected dataset with current filters.');
+                showError('No data available for the selected dataset(s) with current filters.');
                 return;
             }
             
@@ -1328,7 +2169,7 @@
                 
                 // Calculate average metric
                 const sum = pairs.reduce((acc, pair) => {
-                    return acc + state.data[pair.model][pair.method][selectedDataset][state.selectedMetric];
+                    return acc + pair.value;
                 }, 0);
                 
                 const avg = sum / pairs.length;
@@ -1369,6 +2210,15 @@
             
             vizContent.appendChild(chartContainer);
             
+            // Determine chart title
+            let chartTitle;
+            if (state.viewSpecificState.overview.useDatasetGroup) {
+                const groupName = state.datasetGroups.find(g => g.id === state.viewSpecificState.overview.selectedDatasetGroup)?.name;
+                chartTitle = `${state.selectedMetric} for Dataset Group: ${groupName}`;
+            } else {
+                chartTitle = `${state.selectedMetric} for ${selectedDataset}`;
+            }
+            
             // Create the chart
             const ctx = canvas.getContext('2d');
             
@@ -1390,7 +2240,7 @@
                     plugins: {
                         title: {
                             display: true,
-                            text: `${state.selectedMetric} for ${selectedDataset}`,
+                            text: chartTitle,
                             font: {
                                 size: 16
                             }
@@ -1441,6 +2291,9 @@
             // Get sort preference
             const sortBy = state.viewSpecificState.comparison.sortBy;
             
+            // Get datasets for this view
+            const datasetsForView = getDatasetsForView('comparison');
+            
             // Validate selections
             if (!model1 || !model2) {
                 showError('Please select two models to compare.');
@@ -1459,154 +2312,103 @@
                 return;
             }
             
-            // Get test sets that both models have data for
-            const commonDatasets = state.selectedDatasets.filter(dataset => 
-                state.data[model1][selectedMethod] && 
-                state.data[model1][selectedMethod][dataset] &&
-                state.data[model2][selectedMethod] && 
-                state.data[model2][selectedMethod][dataset]
-            );
-            
-            if (commonDatasets.length === 0) {
-                showError('No common datasets available for these models with the selected method.');
-                return;
-            }
-            
-            // Extract data for both models
-            const model1Data = commonDatasets.map(dataset => 
-                state.data[model1][selectedMethod][dataset][state.selectedMetric]
-            );
-            
-            const model2Data = commonDatasets.map(dataset => 
-                state.data[model2][selectedMethod][dataset][state.selectedMetric]
-            );
-            
-            // Calculate differences for sorting if needed
-            const differences = model1Data.map((val, i) => val - model2Data[i]);
-            
-            // Create pairs of [dataset, model1Data, model2Data, difference] for sorting
-            let pairs = commonDatasets.map((dataset, i) => [
-                dataset, 
-                model1Data[i], 
-                model2Data[i], 
-                differences[i]
-            ]);
-            
-            // Sort based on user's preference
-            if (sortBy === 'alphabetical') {
-                // Sort alphabetically, but put standard datasets first
-                const standardDatasets = ['essay', 'ai_human', 'hc3', 'hc3_plus', 'custom4o'];
-                pairs.sort((a, b) => {
-                    const aIsStandard = standardDatasets.includes(a[0]);
-                    const bIsStandard = standardDatasets.includes(b[0]);
-                    
-                    if (aIsStandard && !bIsStandard) return -1;
-                    if (!aIsStandard && bIsStandard) return 1;
-                    
-                    return a[0].localeCompare(b[0]);
-                });
-            } else if (sortBy === 'performance-desc') {
-                // Sort by model1's performance, highest first
-                pairs.sort((a, b) => b[1] - a[1]);
-            } else if (sortBy === 'performance-asc') {
-                // Sort by model1's performance, lowest first
-                pairs.sort((a, b) => a[1] - b[1]);
-            } else if (sortBy === 'difference-desc') {
-                // Sort by difference (model1 - model2), highest first
-                pairs.sort((a, b) => b[3] - a[3]);
-            }
-            
-            // Extract sorted data
-            const sortedDatasets = pairs.map(p => p[0]);
-            const sortedModel1Data = pairs.map(p => p[1]);
-            const sortedModel2Data = pairs.map(p => p[2]);
-            
-            // Format dataset labels for display
-            const displayLabels = sortedDatasets.map(dataset => {
-                if (dataset.startsWith('ghostbusters_')) {
-                    return dataset.replace('ghostbusters_', 'GB: ').replace(/_/g, ' ');
+            if (state.viewSpecificState.comparison.useDatasetGroup) {
+                // For dataset groups, we compare the aggregated metrics
+                const groupId = state.viewSpecificState.comparison.selectedDatasetGroup;
+                const group = state.datasetGroups.find(g => g.id === groupId);
+                
+                if (!group || group.datasets.length === 0) {
+                    showError('The selected dataset group is empty or does not exist.');
+                    return;
                 }
-                return dataset;
-            });
-            
-            // Create chart container
-            const chartContainer = document.createElement('div');
-            chartContainer.className = 'chart-container';
-            
-            const canvas = document.createElement('canvas');
-            canvas.id = 'comparison-chart';
-            chartContainer.appendChild(canvas);
-            
-            vizContent.appendChild(chartContainer);
-            
-            // Create the chart
-            const ctx = canvas.getContext('2d');
-            
-            state.charts.comparison = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: displayLabels,
-                    datasets: [
-                        {
-                            label: model1,
-                            data: sortedModel1Data,
-                            backgroundColor: 'rgba(79, 70, 229, 0.7)',
-                            borderColor: 'rgba(79, 70, 229, 1)',
-                            borderWidth: 1
-                        },
-                        {
-                            label: model2,
-                            data: sortedModel2Data,
-                            backgroundColor: 'rgba(236, 72, 153, 0.7)',
-                            borderColor: 'rgba(236, 72, 153, 1)',
-                            borderWidth: 1
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: `${state.selectedMetric} Comparison (${selectedMethod})`,
-                            font: {
-                                size: 16
+                
+                // Get aggregated metrics for both models
+                const model1Value = aggregateMetrics(model1, selectedMethod, group.datasets, state.selectedMetric);
+                const model2Value = aggregateMetrics(model2, selectedMethod, group.datasets, state.selectedMetric);
+                
+                if (model1Value === null || model2Value === null) {
+                    showError('One or both models do not have sufficient data for the selected dataset group.');
+                    return;
+                }
+                
+                // Create chart container
+                const chartContainer = document.createElement('div');
+                chartContainer.className = 'chart-container';
+                
+                const canvas = document.createElement('canvas');
+                canvas.id = 'comparison-chart-group';
+                chartContainer.appendChild(canvas);
+                
+                vizContent.appendChild(chartContainer);
+                
+                // Create the chart
+                const ctx = canvas.getContext('2d');
+                
+                state.charts.comparison = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: [group.name],
+                        datasets: [
+                            {
+                                label: model1,
+                                data: [model1Value],
+                                backgroundColor: 'rgba(79, 70, 229, 0.7)',
+                                borderColor: 'rgba(79, 70, 229, 1)',
+                                borderWidth: 1
+                            },
+                            {
+                                label: model2,
+                                data: [model2Value],
+                                backgroundColor: 'rgba(236, 72, 153, 0.7)',
+                                borderColor: 'rgba(236, 72, 153, 1)',
+                                borderWidth: 1
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: `${state.selectedMetric} Comparison for ${group.name} (${selectedMethod})`,
+                                font: {
+                                    size: 16
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    afterBody: function(tooltipItems) {
+                                        const diff = model1Value - model2Value;
+                                        return `Difference: ${diff.toFixed(4)}`;
+                                    }
+                                }
                             }
                         },
-                        tooltip: {
-                            callbacks: {
-                                afterBody: function(tooltipItems) {
-                                    const index = tooltipItems[0].dataIndex;
-                                    const diff = sortedModel1Data[index] - sortedModel2Data[index];
-                                    return `Difference: ${diff.toFixed(4)}`;
+                        scales: {
+                            y: {
+                                beginAtZero: false,
+                                min: Math.max(0.5, Math.min(...sortedModel1Data, ...sortedModel2Data) - 0.1),
+                                max: Math.min(1.0, Math.max(...sortedModel1Data, ...sortedModel2Data) + 0.1),
+                                title: {
+                                    display: true,
+                                    text: state.selectedMetric
+                                }
+                            },
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Datasets'
+                                },
+                                ticks: {
+                                    maxRotation: 45,
+                                    minRotation: 45
                                 }
                             }
                         }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: false,
-                            min: Math.max(0.5, Math.min(...sortedModel1Data, ...sortedModel2Data) - 0.1),
-                            max: Math.min(1.0, Math.max(...sortedModel1Data, ...sortedModel2Data) + 0.1),
-                            title: {
-                                display: true,
-                                text: state.selectedMetric
-                            }
-                        },
-                        x: {
-                            title: {
-                                display: true,
-                                text: 'Datasets'
-                            },
-                            ticks: {
-                                maxRotation: 45,
-                                minRotation: 45
-                            }
-                        }
                     }
-                }
-            });
+                });
+            }
         }
         
         // Render the table visualization
@@ -1617,6 +2419,9 @@
             const model = state.viewSpecificState.table.model;
             const method = state.viewSpecificState.table.method;
             const sortBy = state.viewSpecificState.table.sortBy;
+            
+            // Get datasets for this view
+            const datasetsForView = getDatasetsForView('table');
             
             // Validate selections
             if (!model) {
@@ -1635,35 +2440,95 @@
                 return;
             }
             
-            // Get datasets that this model has data for
-            const availableDatasets = state.selectedDatasets.filter(dataset => 
-                state.data[model][method] && state.data[model][method][dataset]
-            );
+            let results = [];
             
-            if (availableDatasets.length === 0) {
-                showError('No datasets available for this model and method with current filters.');
-                return;
+            if (state.viewSpecificState.table.useDatasetGroup) {
+                // For dataset groups, show all datasets in the group plus the average
+                const groupId = state.viewSpecificState.table.selectedDatasetGroup;
+                const group = state.datasetGroups.find(g => g.id === groupId);
+                
+                if (!group || group.datasets.length === 0) {
+                    showError('The selected dataset group is empty or does not exist.');
+                    return;
+                }
+                
+                // Get available datasets in this group for this model/method
+                const availableDatasets = group.datasets.filter(dataset => 
+                    state.data[model][method] && state.data[model][method][dataset]
+                );
+                
+                if (availableDatasets.length === 0) {
+                    showError('No datasets in this group are available for the selected model and method.');
+                    return;
+                }
+                
+                // Add results for each dataset
+                results = availableDatasets.map(dataset => {
+                    const data = state.data[model][method][dataset];
+                    return {
+                        dataset,
+                        f1Score: data['F1 Score'],
+                        f1Low: data['F1 Score Confidence Interval'][0],
+                        f1High: data['F1 Score Confidence Interval'][1],
+                        auroc: data['AUROC'],
+                        aurocLow: data['ROC AUC Confidence Interval'][0],
+                        aurocHigh: data['ROC AUC Confidence Interval'][1]
+                    };
+                });
+                
+                // Add group average
+                const avgF1 = aggregateMetrics(model, method, availableDatasets, 'F1 Score');
+                const avgAUROC = aggregateMetrics(model, method, availableDatasets, 'AUROC');
+                const avgF1CI = aggregateConfidenceIntervals(model, method, availableDatasets, 'F1 Score');
+                const avgAUROCCI = aggregateConfidenceIntervals(model, method, availableDatasets, 'AUROC');
+                
+                if (avgF1 !== null && avgAUROC !== null) {
+                    results.push({
+                        dataset: `${group.name} (Average)`,
+                        f1Score: avgF1,
+                        f1Low: avgF1CI[0],
+                        f1High: avgF1CI[1],
+                        auroc: avgAUROC,
+                        aurocLow: avgAUROCCI[0],
+                        aurocHigh: avgAUROCCI[1],
+                        isAverage: true
+                    });
+                }
+            } else {
+                // Get datasets that this model has data for
+                const availableDatasets = datasetsForView.filter(dataset => 
+                    state.data[model][method] && state.data[model][method][dataset]
+                );
+                
+                if (availableDatasets.length === 0) {
+                    showError('No datasets available for this model and method with current filters.');
+                    return;
+                }
+                
+                // Create result objects for sorting
+                results = availableDatasets.map(dataset => {
+                    const result = state.data[model][method][dataset];
+                    return {
+                        dataset,
+                        f1Score: result['F1 Score'],
+                        f1Low: result['F1 Score Confidence Interval'][0],
+                        f1High: result['F1 Score Confidence Interval'][1],
+                        auroc: result['AUROC'],
+                        aurocLow: result['ROC AUC Confidence Interval'][0],
+                        aurocHigh: result['ROC AUC Confidence Interval'][1]
+                    };
+                });
             }
-            
-            // Create result objects for sorting
-            const results = availableDatasets.map(dataset => {
-                const result = state.data[model][method][dataset];
-                return {
-                    dataset,
-                    f1Score: result['F1 Score'],
-                    f1Low: result['F1 Score Confidence Interval'][0],
-                    f1High: result['F1 Score Confidence Interval'][1],
-                    auroc: result['AUROC'],
-                    aurocLow: result['ROC AUC Confidence Interval'][0],
-                    aurocHigh: result['ROC AUC Confidence Interval'][1]
-                };
-            });
             
             // Sort based on user's preference
             if (sortBy === 'alphabetical') {
-                // Sort alphabetically, but put standard datasets first
+                // Sort alphabetically, but put standard datasets and averages first
                 const standardDatasets = ['essay', 'ai_human', 'hc3', 'hc3_plus', 'custom4o'];
                 results.sort((a, b) => {
+                    // Always put the average at the end
+                    if (a.isAverage) return 1;
+                    if (b.isAverage) return -1;
+                    
                     const aIsStandard = standardDatasets.includes(a.dataset);
                     const bIsStandard = standardDatasets.includes(b.dataset);
                     
@@ -1718,6 +2583,12 @@
             results.forEach(result => {
                 const row = document.createElement('tr');
                 
+                // Highlight the average row
+                if (result.isAverage) {
+                    row.style.fontWeight = 'bold';
+                    row.style.backgroundColor = 'var(--highlight-color)';
+                }
+                
                 // Dataset
                 const datasetCell = document.createElement('td');
                 datasetCell.textContent = result.dataset;
@@ -1762,11 +2633,17 @@
             // Add title
             const title = document.createElement('h3');
             title.className = 'section-title';
-            title.textContent = `${model} - ${method}`;
+            
+            if (state.viewSpecificState.table.useDatasetGroup) {
+                const groupName = state.datasetGroups.find(g => g.id === state.viewSpecificState.table.selectedDatasetGroup)?.name;
+                title.textContent = `${model} - ${method} (Dataset Group: ${groupName})`;
+            } else {
+                title.textContent = `${model} - ${method}`;
+            }
             
             vizContent.appendChild(title);
             vizContent.appendChild(tableContainer);
         }
     </script>
 </body>
-</html>
+</html> 
