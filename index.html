@@ -1,0 +1,1772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM Detector Benchmark Explorer</title>
+    <style>
+        :root {
+            --primary-color: #4f46e5;
+            --primary-light: #818cf8;
+            --primary-dark: #3730a3;
+            --secondary-color: #ec4899;
+            --background-color: #f9fafb;
+            --panel-color: #ffffff;
+            --text-color: #1f2937;
+            --text-light: #6b7280;
+            --border-color: #e5e7eb;
+            --highlight-color: #c7d2fe;
+            --error-color: #ef4444;
+            --warning-color: #f59e0b;
+            --success-color: #10b981;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.5;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+        
+        header {
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        
+        h1, h2, h3, h4 {
+            margin-bottom: 1rem;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            color: var(--primary-dark);
+            margin-bottom: 0.5rem;
+        }
+        
+        header p {
+            font-size: 1.125rem;
+            color: var(--text-light);
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .dashboard {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 1.5rem;
+        }
+        
+        @media (max-width: 1024px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .controls-panel {
+            background-color: var(--panel-color);
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+            position: sticky;
+            top: 1rem;
+            max-height: calc(100vh - 2rem);
+            overflow-y: auto;
+        }
+        
+        .visualization-panel {
+            background-color: var(--panel-color);
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+        }
+        
+        .section-title {
+            font-size: 1.25rem;
+            padding-bottom: 0.5rem;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid var(--border-color);
+            color: var(--primary-dark);
+        }
+        
+        .control-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .control-group h3 {
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-color);
+        }
+        
+        .search-box {
+            position: relative;
+            margin-bottom: 0.75rem;
+        }
+        
+        .search-box input {
+            width: 100%;
+            padding: 0.625rem 0.75rem;
+            padding-left: 2rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+        }
+        
+        .search-box::before {
+            content: "🔍";
+            position: absolute;
+            left: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-light);
+        }
+        
+        .selection-list {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+            padding: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+        
+        .selection-item {
+            display: flex;
+            align-items: center;
+            padding: 0.375rem 0.5rem;
+            border-radius: 0.25rem;
+        }
+        
+        .selection-item:hover {
+            background-color: var(--highlight-color);
+        }
+        
+        .selection-item input {
+            margin-right: 0.5rem;
+        }
+        
+        .selection-item label {
+            font-size: 0.875rem;
+            cursor: pointer;
+            flex: 1;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+        
+        .action-buttons button {
+            flex: 1;
+            padding: 0.375rem 0.5rem;
+            font-size: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.25rem;
+            background-color: var(--panel-color);
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .action-buttons button:hover {
+            background-color: var(--highlight-color);
+        }
+        
+        .radio-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+        
+        .radio-item {
+            flex: 1;
+            min-width: 120px;
+        }
+        
+        .radio-item input {
+            margin-right: 0.25rem;
+        }
+        
+        .radio-item label {
+            font-size: 0.875rem;
+        }
+        
+        .visualization-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .visualization-title {
+            font-size: 1.5rem;
+            color: var(--primary-dark);
+            margin: 0;
+        }
+        
+        .view-options {
+            display: flex;
+            gap: 0.75rem;
+        }
+        
+        .view-options button {
+            padding: 0.5rem 0.75rem;
+            font-size: 0.875rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+            background-color: var(--panel-color);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .view-options button:hover {
+            background-color: var(--highlight-color);
+        }
+        
+        .view-options button.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+        
+        .chart-container {
+            height: 500px;
+            position: relative;
+        }
+        
+        #visualization-content {
+            min-height: 500px;
+        }
+        
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 200px;
+            font-size: 1.125rem;
+            color: var(--primary-light);
+        }
+        
+        .error {
+            background-color: #fee2e2;
+            color: var(--error-color);
+            padding: 1rem;
+            border-radius: 0.375rem;
+            margin-bottom: 1rem;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            font-size: 0.875rem;
+        }
+        
+        th, td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        th {
+            background-color: var(--highlight-color);
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+        
+        tr:hover {
+            background-color: rgba(0, 0, 0, 0.02);
+        }
+        
+        .table-container {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        .primary-button {
+            padding: 0.625rem 1.25rem;
+            border: none;
+            border-radius: 0.375rem;
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .primary-button:hover {
+            background-color: var(--primary-dark);
+        }
+        
+        .save-button {
+            margin-top: 1rem;
+            width: 100%;
+        }
+        
+        .status-bar {
+            margin-top: 1rem;
+            padding: 0.75rem;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            background-color: var(--highlight-color);
+        }
+        
+        .chart-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            font-size: 0.875rem;
+        }
+        
+        .legend-color {
+            width: 1rem;
+            height: 1rem;
+            border-radius: 0.25rem;
+            margin-right: 0.375rem;
+        }
+        
+        .tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.85);
+            color: white;
+            border-radius: 0.25rem;
+            padding: 0.5rem;
+            font-size: 0.75rem;
+            pointer-events: none;
+            z-index: 100;
+            max-width: 300px;
+        }
+        
+        .plot-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .plot-option {
+            flex: 1;
+            min-width: 150px;
+        }
+        
+        label {
+            display: block;
+            font-size: 0.875rem;
+            margin-bottom: 0.25rem;
+        }
+        
+        select {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            background-color: var(--panel-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>LLM Detector Benchmark Explorer</h1>
+            <p>Explore and compare the performance of various LLM detection methods across different models and datasets</p>
+        </header>
+        
+        <div class="dashboard">
+            <div class="controls-panel">
+                <h2 class="section-title">Data Selection</h2>
+                
+                <div class="control-group">
+                    <h3>Detection Methods</h3>
+                    <div class="selection-list" id="method-list">
+                        <!-- Will be populated dynamically -->
+                        <div class="loading">Loading methods...</div>
+                    </div>
+                    <div class="action-buttons">
+                        <button id="select-all-methods">Select All</button>
+                        <button id="clear-all-methods">Clear All</button>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <h3>Models</h3>
+                    <div class="search-box">
+                        <input type="text" id="model-search" placeholder="Search models...">
+                    </div>
+                    <div class="selection-list" id="model-list">
+                        <!-- Will be populated dynamically -->
+                        <div class="loading">Loading models...</div>
+                    </div>
+                    <div class="action-buttons">
+                        <button id="select-all-models">Select All</button>
+                        <button id="clear-all-models">Clear All</button>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <h3>Datasets</h3>
+                    <div class="search-box">
+                        <input type="text" id="dataset-search" placeholder="Search datasets...">
+                    </div>
+                    <div class="selection-list" id="dataset-list">
+                        <!-- Will be populated dynamically -->
+                        <div class="loading">Loading datasets...</div>
+                    </div>
+                    <div class="action-buttons">
+                        <button id="select-all-datasets">Select All</button>
+                        <button id="clear-all-datasets">Clear All</button>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <h3>Metrics</h3>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" id="metric-f1" name="metric" value="F1 Score" checked>
+                            <label for="metric-f1">F1 Score</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="metric-auroc" name="metric" value="AUROC">
+                            <label for="metric-auroc">AUROC</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <button id="update-viz" class="primary-button save-button">Update Visualization</button>
+                
+                <div id="selection-summary" class="status-bar">
+                    Ready to explore data
+                </div>
+            </div>
+            
+            <div class="visualization-panel">
+                <div class="visualization-header">
+                    <h2 class="visualization-title">Benchmark Results</h2>
+                    <div class="view-options">
+                        <button id="view-overview" class="active">Overview</button>
+                        <button id="view-comparison">Comparison</button>
+                        <button id="view-table">Table</button>
+                    </div>
+                </div>
+                
+                <div id="view-specific-controls">
+                    <!-- Will be populated based on current view -->
+                </div>
+                
+                <div id="visualization-content">
+                    <div class="loading">Loading visualization...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script>
+        // Global state
+        const state = {
+            data: null,
+            selectedMethods: [],
+            selectedModels: [],
+            selectedDatasets: [],
+            selectedMetric: 'F1 Score',
+            currentView: 'overview',
+            charts: {},
+            viewSpecificState: {
+                overview: {
+                    groupBy: 'none', // 'none', 'family', 'size', 'method'
+                    sortBy: 'performance-desc' // 'alphabetical', 'performance-desc', 'performance-asc'
+                },
+                comparison: {
+                    models: [], // Exactly 2 models for comparison
+                    sortBy: 'performance-desc' // 'alphabetical', 'performance-desc', 'performance-asc', 'difference-desc'
+                },
+                table: {
+                    model: null,
+                    method: null,
+                    sortBy: 'f1-desc' // 'alphabetical', 'f1-desc', 'f1-asc', 'auroc-desc', 'auroc-asc'
+                }
+            }
+        };
+        
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                // Load data
+                await loadData();
+                
+                // Initialize the UI
+                initializeUI();
+                
+                // Set up event listeners
+                setupEventListeners();
+                
+                // Update the visualization
+                updateVisualization();
+            } catch (error) {
+                console.error('Error initializing application:', error);
+                showError('Failed to load data. Please check console for details.');
+            }
+        });
+        
+        // Load data from data.txt
+        async function loadData() {
+            try {
+                const response = await fetch('data.txt');
+                const text = await response.text();
+                state.data = JSON.parse(text);
+                console.log('Data loaded successfully:', Object.keys(state.data).length, 'models');
+                return state.data;
+            } catch (error) {
+                console.error('Error loading data:', error);
+                throw error;
+            }
+        }
+        
+        // Initialize the UI with data
+        function initializeUI() {
+            // Extract all unique detection methods, models, and datasets
+            const allMethods = new Set();
+            const allModels = new Set();
+            const allDatasets = new Set();
+            
+            // Populate sets with all unique values
+            Object.keys(state.data).forEach(model => {
+                allModels.add(model);
+                
+                Object.keys(state.data[model]).forEach(method => {
+                    allMethods.add(method);
+                    
+                    Object.keys(state.data[model][method]).forEach(dataset => {
+                        allDatasets.add(dataset);
+                    });
+                });
+            });
+            
+            // Initialize selected state with all items
+            state.selectedMethods = [...allMethods];
+            state.selectedModels = [...allModels];
+            state.selectedDatasets = [...allDatasets];
+            
+            // Populate Detection Methods list
+            populateCheckboxList('method-list', [...allMethods], state.selectedMethods);
+            
+            // Populate Models list
+            populateCheckboxList('model-list', [...allModels].sort(), state.selectedModels);
+            
+            // Populate Datasets list
+            populateCheckboxList('dataset-list', sortDatasets([...allDatasets]), state.selectedDatasets);
+            
+            // Update selection summary
+            updateSelectionSummary();
+            
+            // Initialize view-specific controls
+            updateViewControls();
+        }
+        
+        // Sort datasets with standard ones first
+        function sortDatasets(datasets) {
+            const standardDatasets = ['essay', 'ai_human', 'hc3', 'hc3_plus', 'custom4o'];
+            
+            return datasets.sort((a, b) => {
+                const aIsStandard = standardDatasets.includes(a);
+                const bIsStandard = standardDatasets.includes(b);
+                
+                if (aIsStandard && !bIsStandard) return -1;
+                if (!aIsStandard && bIsStandard) return 1;
+                
+                return a.localeCompare(b);
+            });
+        }
+        
+        // Populate a checkbox list
+        function populateCheckboxList(listId, items, selectedItems) {
+            const listElement = document.getElementById(listId);
+            listElement.innerHTML = '';
+            
+            items.forEach(item => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'selection-item';
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = `${listId}-${item}`;
+                checkbox.value = item;
+                checkbox.checked = selectedItems.includes(item);
+                
+                const label = document.createElement('label');
+                label.htmlFor = checkbox.id;
+                label.textContent = item;
+                
+                itemDiv.appendChild(checkbox);
+                itemDiv.appendChild(label);
+                listElement.appendChild(itemDiv);
+            });
+        }
+        
+        // Set up event listeners
+        function setupEventListeners() {
+            // Detection Method selection
+            document.querySelectorAll('#method-list input[type="checkbox"]').forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    if (this.checked) {
+                        state.selectedMethods.push(this.value);
+                    } else {
+                        state.selectedMethods = state.selectedMethods.filter(m => m !== this.value);
+                    }
+                    updateSelectionSummary();
+                });
+            });
+            
+            // Model selection
+            document.querySelectorAll('#model-list input[type="checkbox"]').forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    if (this.checked) {
+                        state.selectedModels.push(this.value);
+                    } else {
+                        state.selectedModels = state.selectedModels.filter(m => m !== this.value);
+                    }
+                    updateSelectionSummary();
+                });
+            });
+            
+            // Dataset selection
+            document.querySelectorAll('#dataset-list input[type="checkbox"]').forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    if (this.checked) {
+                        state.selectedDatasets.push(this.value);
+                    } else {
+                        state.selectedDatasets = state.selectedDatasets.filter(d => d !== this.value);
+                    }
+                    updateSelectionSummary();
+                });
+            });
+            
+            // Search functionality
+            document.getElementById('model-search').addEventListener('input', function() {
+                filterOptions('model-list', this.value);
+            });
+            
+            document.getElementById('dataset-search').addEventListener('input', function() {
+                filterOptions('dataset-list', this.value);
+            });
+            
+            // Select/Clear All buttons
+            document.getElementById('select-all-methods').addEventListener('click', function() {
+                selectAll('method-list', true);
+            });
+            
+            document.getElementById('clear-all-methods').addEventListener('click', function() {
+                selectAll('method-list', false);
+            });
+            
+            document.getElementById('select-all-models').addEventListener('click', function() {
+                selectAll('model-list', true);
+            });
+            
+            document.getElementById('clear-all-models').addEventListener('click', function() {
+                selectAll('model-list', false);
+            });
+            
+            document.getElementById('select-all-datasets').addEventListener('click', function() {
+                selectAll('dataset-list', true);
+            });
+            
+            document.getElementById('clear-all-datasets').addEventListener('click', function() {
+                selectAll('dataset-list', false);
+            });
+            
+            // Metric selection
+            document.querySelectorAll('input[name="metric"]').forEach(radio => {
+                radio.addEventListener('change', function() {
+                    if (this.checked) {
+                        state.selectedMetric = this.value;
+                        updateSelectionSummary();
+                    }
+                });
+            });
+            
+            // View selection
+            document.getElementById('view-overview').addEventListener('click', function() {
+                changeView('overview');
+            });
+            
+            document.getElementById('view-comparison').addEventListener('click', function() {
+                changeView('comparison');
+            });
+            
+            document.getElementById('view-table').addEventListener('click', function() {
+                changeView('table');
+            });
+            
+            // Update visualization button
+            document.getElementById('update-viz').addEventListener('click', updateVisualization);
+        }
+        
+        // Change the current view
+        function changeView(viewName) {
+            // Update active button
+            document.querySelectorAll('.view-options button').forEach(button => {
+                button.classList.remove('active');
+            });
+            document.getElementById(`view-${viewName}`).classList.add('active');
+            
+            // Update state
+            state.currentView = viewName;
+            
+            // Update view-specific controls
+            updateViewControls();
+            
+            // Update visualization
+            updateVisualization();
+        }
+        
+        // Update view-specific controls based on current view
+        function updateViewControls() {
+            const controlsContainer = document.getElementById('view-specific-controls');
+            controlsContainer.innerHTML = '';
+            
+            if (state.currentView === 'overview') {
+                // Overview controls
+                const controls = document.createElement('div');
+                controls.className = 'plot-options';
+                
+                // Group by
+                const groupByContainer = document.createElement('div');
+                groupByContainer.className = 'plot-option';
+                
+                const groupByLabel = document.createElement('label');
+                groupByLabel.htmlFor = 'overview-group';
+                groupByLabel.textContent = 'Group By:';
+                
+                const groupBySelect = document.createElement('select');
+                groupBySelect.id = 'overview-group';
+                
+                const groupOptions = [
+                    { value: 'none', text: 'No Grouping' },
+                    { value: 'family', text: 'Model Family' },
+                    { value: 'size', text: 'Model Size' },
+                    { value: 'method', text: 'Detection Method' }
+                ];
+                
+                groupOptions.forEach(option => {
+                    const optionElement = document.createElement('option');
+                    optionElement.value = option.value;
+                    optionElement.textContent = option.text;
+                    if (option.value === state.viewSpecificState.overview.groupBy) {
+                        optionElement.selected = true;
+                    }
+                    groupBySelect.appendChild(optionElement);
+                });
+                
+                groupBySelect.addEventListener('change', function() {
+                    state.viewSpecificState.overview.groupBy = this.value;
+                    updateVisualization();
+                });
+                
+                groupByContainer.appendChild(groupByLabel);
+                groupByContainer.appendChild(groupBySelect);
+                
+                // Sort by
+                const sortByContainer = document.createElement('div');
+                sortByContainer.className = 'plot-option';
+                
+                const sortByLabel = document.createElement('label');
+                sortByLabel.htmlFor = 'overview-sort';
+                sortByLabel.textContent = 'Sort By:';
+                
+                const sortBySelect = document.createElement('select');
+                sortBySelect.id = 'overview-sort';
+                
+                const sortOptions = [
+                    { value: 'alphabetical', text: 'Alphabetical' },
+                    { value: 'performance-desc', text: 'Performance (High to Low)' },
+                    { value: 'performance-asc', text: 'Performance (Low to High)' }
+                ];
+                
+                sortOptions.forEach(option => {
+                    const optionElement = document.createElement('option');
+                    optionElement.value = option.value;
+                    optionElement.textContent = option.text;
+                    if (option.value === state.viewSpecificState.overview.sortBy) {
+                        optionElement.selected = true;
+                    }
+                    sortBySelect.appendChild(optionElement);
+                });
+                
+                sortBySelect.addEventListener('change', function() {
+                    state.viewSpecificState.overview.sortBy = this.value;
+                    updateVisualization();
+                });
+                
+                sortByContainer.appendChild(sortByLabel);
+                sortByContainer.appendChild(sortBySelect);
+                
+                // Dataset selector
+                const datasetContainer = document.createElement('div');
+                datasetContainer.className = 'plot-option';
+                
+                const datasetLabel = document.createElement('label');
+                datasetLabel.htmlFor = 'overview-dataset';
+                datasetLabel.textContent = 'Dataset:';
+                
+                const datasetSelect = document.createElement('select');
+                datasetSelect.id = 'overview-dataset';
+                
+                // Collect datasets that have data with current selections
+                const availableDatasets = new Set();
+                
+                state.selectedModels.forEach(model => {
+                    state.selectedMethods.forEach(method => {
+                        if (state.data[model] && state.data[model][method]) {
+                            Object.keys(state.data[model][method]).forEach(dataset => {
+                                if (state.selectedDatasets.includes(dataset)) {
+                                    availableDatasets.add(dataset);
+                                }
+                            });
+                        }
+                    });
+                });
+                
+                // Sort and add datasets to selector
+                const sortedDatasets = sortDatasets([...availableDatasets]);
+                
+                sortedDatasets.forEach(dataset => {
+                    const optionElement = document.createElement('option');
+                    optionElement.value = dataset;
+                    
+                    // Format ghostbusters datasets
+                    if (dataset.startsWith('ghostbusters_')) {
+                        optionElement.textContent = dataset.replace('ghostbusters_', 'GB: ').replace(/_/g, ' ');
+                    } else {
+                        optionElement.textContent = dataset;
+                    }
+                    
+                    datasetSelect.appendChild(optionElement);
+                });
+                
+                datasetSelect.addEventListener('change', function() {
+                    updateVisualization();
+                });
+                
+                datasetContainer.appendChild(datasetLabel);
+                datasetContainer.appendChild(datasetSelect);
+                
+                // Add all controls
+                controls.appendChild(groupByContainer);
+                controls.appendChild(sortByContainer);
+                controls.appendChild(datasetContainer);
+                
+                controlsContainer.appendChild(controls);
+            } else if (state.currentView === 'comparison') {
+                // Comparison controls
+                const controls = document.createElement('div');
+                controls.className = 'plot-options';
+                
+                // Model 1 selector
+                const model1Container = document.createElement('div');
+                model1Container.className = 'plot-option';
+                
+                const model1Label = document.createElement('label');
+                model1Label.htmlFor = 'comparison-model1';
+                model1Label.textContent = 'Model 1:';
+                
+                const model1Select = document.createElement('select');
+                model1Select.id = 'comparison-model1';
+                
+                // Model 2 selector
+                const model2Container = document.createElement('div');
+                model2Container.className = 'plot-option';
+                
+                const model2Label = document.createElement('label');
+                model2Label.htmlFor = 'comparison-model2';
+                model2Label.textContent = 'Model 2:';
+                
+                const model2Select = document.createElement('select');
+                model2Select.id = 'comparison-model2';
+                
+                // Filter models that have data with current selections
+                const validModels = state.selectedModels.filter(model => {
+                    return state.selectedMethods.some(method => 
+                        state.data[model] && 
+                        state.data[model][method] &&
+                        Object.keys(state.data[model][method]).some(dataset => 
+                            state.selectedDatasets.includes(dataset)
+                        )
+                    );
+                }).sort();
+                
+                // Add models to selectors
+                validModels.forEach((model, index) => {
+                    // Model 1
+                    const option1 = document.createElement('option');
+                    option1.value = model;
+                    option1.textContent = model;
+                    
+                    if (index === 0 || (state.viewSpecificState.comparison.models[0] && model === state.viewSpecificState.comparison.models[0])) {
+                        option1.selected = true;
+                    }
+                    
+                    model1Select.appendChild(option1);
+                    
+                    // Model 2
+                    const option2 = document.createElement('option');
+                    option2.value = model;
+                    option2.textContent = model;
+                    
+                    if (index === 1 || (state.viewSpecificState.comparison.models[1] && model === state.viewSpecificState.comparison.models[1])) {
+                        option2.selected = true;
+                    }
+                    
+                    model2Select.appendChild(option2);
+                });
+                
+                // Method selector
+                const methodContainer = document.createElement('div');
+                methodContainer.className = 'plot-option';
+                
+                const methodLabel = document.createElement('label');
+                methodLabel.htmlFor = 'comparison-method';
+                methodLabel.textContent = 'Method:';
+                
+                const methodSelect = document.createElement('select');
+                methodSelect.id = 'comparison-method';
+                
+                // Add available methods
+                state.selectedMethods.forEach(method => {
+                    const option = document.createElement('option');
+                    option.value = method;
+                    option.textContent = method;
+                    methodSelect.appendChild(option);
+                });
+                
+                // Sort by
+                const sortByContainer = document.createElement('div');
+                sortByContainer.className = 'plot-option';
+                
+                const sortByLabel = document.createElement('label');
+                sortByLabel.htmlFor = 'comparison-sort';
+                sortByLabel.textContent = 'Sort By:';
+                
+                const sortBySelect = document.createElement('select');
+                sortBySelect.id = 'comparison-sort';
+                
+                const sortOptions = [
+                    { value: 'alphabetical', text: 'Alphabetical' },
+                    { value: 'performance-desc', text: 'Performance (High to Low)' },
+                    { value: 'performance-asc', text: 'Performance (Low to High)' },
+                    { value: 'difference-desc', text: 'Difference (High to Low)' }
+                ];
+                
+                sortOptions.forEach(option => {
+                    const optionElement = document.createElement('option');
+                    optionElement.value = option.value;
+                    optionElement.textContent = option.text;
+                    if (option.value === state.viewSpecificState.comparison.sortBy) {
+                        optionElement.selected = true;
+                    }
+                    sortBySelect.appendChild(optionElement);
+                });
+                
+                // Add event listeners
+                model1Select.addEventListener('change', function() {
+                    state.viewSpecificState.comparison.models[0] = this.value;
+                    updateVisualization();
+                });
+                
+                model2Select.addEventListener('change', function() {
+                    state.viewSpecificState.comparison.models[1] = this.value;
+                    updateVisualization();
+                });
+                
+                methodSelect.addEventListener('change', function() {
+                    updateVisualization();
+                });
+                
+                sortBySelect.addEventListener('change', function() {
+                    state.viewSpecificState.comparison.sortBy = this.value;
+                    updateVisualization();
+                });
+                
+                // Add all controls
+                model1Container.appendChild(model1Label);
+                model1Container.appendChild(model1Select);
+                
+                model2Container.appendChild(model2Label);
+                model2Container.appendChild(model2Select);
+                
+                methodContainer.appendChild(methodLabel);
+                methodContainer.appendChild(methodSelect);
+                
+                sortByContainer.appendChild(sortByLabel);
+                sortByContainer.appendChild(sortBySelect);
+                
+                controls.appendChild(model1Container);
+                controls.appendChild(model2Container);
+                controls.appendChild(methodContainer);
+                controls.appendChild(sortByContainer);
+                
+                controlsContainer.appendChild(controls);
+                
+                // Initialize comparison models if needed
+                if (!state.viewSpecificState.comparison.models.length && validModels.length >= 2) {
+                    state.viewSpecificState.comparison.models = [validModels[0], validModels[1]];
+                }
+            } else if (state.currentView === 'table') {
+                // Table controls
+                const controls = document.createElement('div');
+                controls.className = 'plot-options';
+                
+                // Model selector
+                const modelContainer = document.createElement('div');
+                modelContainer.className = 'plot-option';
+                
+                const modelLabel = document.createElement('label');
+                modelLabel.htmlFor = 'table-model';
+                modelLabel.textContent = 'Model:';
+                
+                const modelSelect = document.createElement('select');
+                modelSelect.id = 'table-model';
+                
+                // Filter models that have data with current selections
+                const validModels = state.selectedModels.filter(model => {
+                    return state.selectedMethods.some(method => 
+                        state.data[model] && 
+                        state.data[model][method] &&
+                        Object.keys(state.data[model][method]).some(dataset => 
+                            state.selectedDatasets.includes(dataset)
+                        )
+                    );
+                }).sort();
+                
+                validModels.forEach((model, index) => {
+                    const option = document.createElement('option');
+                    option.value = model;
+                    option.textContent = model;
+                    
+                    if (index === 0 || (state.viewSpecificState.table.model && model === state.viewSpecificState.table.model)) {
+                        option.selected = true;
+                    }
+                    
+                    modelSelect.appendChild(option);
+                });
+                
+                // Method selector
+                const methodContainer = document.createElement('div');
+                methodContainer.className = 'plot-option';
+                
+                const methodLabel = document.createElement('label');
+                methodLabel.htmlFor = 'table-method';
+                methodLabel.textContent = 'Method:';
+                
+                const methodSelect = document.createElement('select');
+                methodSelect.id = 'table-method';
+                
+                // Add available methods
+                state.selectedMethods.forEach(method => {
+                    const option = document.createElement('option');
+                    option.value = method;
+                    option.textContent = method;
+                    methodSelect.appendChild(option);
+                });
+                
+                // Sort by
+                const sortByContainer = document.createElement('div');
+                sortByContainer.className = 'plot-option';
+                
+                const sortByLabel = document.createElement('label');
+                sortByLabel.htmlFor = 'table-sort';
+                sortByLabel.textContent = 'Sort By:';
+                
+                const sortBySelect = document.createElement('select');
+                sortBySelect.id = 'table-sort';
+                
+                const sortOptions = [
+                    { value: 'alphabetical', text: 'Test Set (A-Z)' },
+                    { value: 'f1-desc', text: 'F1 Score (High to Low)' },
+                    { value: 'f1-asc', text: 'F1 Score (Low to High)' },
+                    { value: 'auroc-desc', text: 'AUROC (High to Low)' },
+                    { value: 'auroc-asc', text: 'AUROC (Low to High)' }
+                ];
+                
+                sortOptions.forEach(option => {
+                    const optionElement = document.createElement('option');
+                    optionElement.value = option.value;
+                    optionElement.textContent = option.text;
+                    if (option.value === state.viewSpecificState.table.sortBy) {
+                        optionElement.selected = true;
+                    }
+                    sortBySelect.appendChild(optionElement);
+                });
+                
+                // Add event listeners
+                modelSelect.addEventListener('change', function() {
+                    state.viewSpecificState.table.model = this.value;
+                    updateVisualization();
+                });
+                
+                methodSelect.addEventListener('change', function() {
+                    state.viewSpecificState.table.method = this.value;
+                    updateVisualization();
+                });
+                
+                sortBySelect.addEventListener('change', function() {
+                    state.viewSpecificState.table.sortBy = this.value;
+                    updateVisualization();
+                });
+                
+                // Add all controls
+                modelContainer.appendChild(modelLabel);
+                modelContainer.appendChild(modelSelect);
+                
+                methodContainer.appendChild(methodLabel);
+                methodContainer.appendChild(methodSelect);
+                
+                sortByContainer.appendChild(sortByLabel);
+                sortByContainer.appendChild(sortBySelect);
+                
+                controls.appendChild(modelContainer);
+                controls.appendChild(methodContainer);
+                controls.appendChild(sortByContainer);
+                
+                controlsContainer.appendChild(controls);
+                
+                // Initialize table model if needed
+                if (!state.viewSpecificState.table.model && validModels.length > 0) {
+                    state.viewSpecificState.table.model = validModels[0];
+                }
+                
+                // Initialize table method if needed
+                if (!state.viewSpecificState.table.method && state.selectedMethods.length > 0) {
+                    state.viewSpecificState.table.method = state.selectedMethods[0];
+                }
+            }
+        }
+        
+        // Update the selection summary
+        function updateSelectionSummary() {
+            const summaryElement = document.getElementById('selection-summary');
+            let summary = '';
+            
+            summary += `${state.selectedMethods.length} method(s), `;
+            summary += `${state.selectedModels.length} model(s), `;
+            summary += `${state.selectedDatasets.length} dataset(s), `;
+            summary += `metric: ${state.selectedMetric}`;
+            
+            summaryElement.textContent = summary;
+        }
+        
+        // Filter options in a list based on search text
+        function filterOptions(listId, searchText) {
+            const listItems = document.querySelectorAll(`#${listId} .selection-item`);
+            
+            listItems.forEach(item => {
+                const label = item.querySelector('label');
+                const text = label.textContent.toLowerCase();
+                const matchesSearch = text.includes(searchText.toLowerCase());
+                
+                item.style.display = matchesSearch ? 'flex' : 'none';
+            });
+        }
+        
+        // Select or clear all checkboxes in a list
+        function selectAll(listId, checked) {
+            const checkboxes = document.querySelectorAll(`#${listId} input[type="checkbox"]`);
+            
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = checked;
+                
+                // Trigger change event
+                const event = new Event('change');
+                checkbox.dispatchEvent(event);
+            });
+        }
+        
+        // Show error message
+        function showError(message) {
+            const vizContent = document.getElementById('visualization-content');
+            vizContent.innerHTML = `<div class="error">${message}</div>`;
+        }
+        
+        // Update the visualization based on current settings
+        function updateVisualization() {
+            // Clear existing visualization
+            const vizContent = document.getElementById('visualization-content');
+            vizContent.innerHTML = '';
+            
+            // Destroy existing chart if any
+            if (state.charts[state.currentView]) {
+                state.charts[state.currentView].destroy();
+                state.charts[state.currentView] = null;
+            }
+            
+            // Check if we have valid selections
+            if (state.selectedMethods.length === 0 || state.selectedModels.length === 0 || state.selectedDatasets.length === 0) {
+                showError('Please select at least one method, model, and dataset to visualize.');
+                return;
+            }
+            
+            // Render the appropriate view
+            if (state.currentView === 'overview') {
+                renderOverviewView();
+            } else if (state.currentView === 'comparison') {
+                renderComparisonView();
+            } else if (state.currentView === 'table') {
+                renderTableView();
+            }
+        }
+        
+        // Render the overview visualization
+        function renderOverviewView() {
+            const vizContent = document.getElementById('visualization-content');
+            
+            // Get selected dataset
+            const datasetSelect = document.getElementById('overview-dataset');
+            const selectedDataset = datasetSelect.value;
+            
+            if (!selectedDataset) {
+                showError('No dataset selected or available with current filters.');
+                return;
+            }
+            
+            // Get settings
+            const groupBy = state.viewSpecificState.overview.groupBy;
+            const sortBy = state.viewSpecificState.overview.sortBy;
+            
+            // Get models and methods that have data for this dataset
+            const validPairs = [];
+            
+            state.selectedModels.forEach(model => {
+                state.selectedMethods.forEach(method => {
+                    if (state.data[model] && 
+                        state.data[model][method] && 
+                        state.data[model][method][selectedDataset]) {
+                        validPairs.push({ model, method });
+                    }
+                });
+            });
+            
+            if (validPairs.length === 0) {
+                showError('No data available for the selected dataset with current filters.');
+                return;
+            }
+            
+            // Group the data
+            let groupedData = {};
+            
+            if (groupBy === 'family') {
+                validPairs.forEach(pair => {
+                    // Extract model family (Gemma2, SmolLM, etc.)
+                    let family = pair.model.split(' ')[0];
+                    // Handle DetectLLM variants
+                    if (family.includes('DetectLLM')) {
+                        family = pair.model.split(' ')[0].replace('DetectLLM', '') + ' DetectLLM';
+                    }
+                    
+                    if (!groupedData[family]) {
+                        groupedData[family] = [];
+                    }
+                    groupedData[family].push(pair);
+                });
+            } else if (groupBy === 'size') {
+                validPairs.forEach(pair => {
+                    // Extract model size (2B, 9B, 135M, etc.)
+                    let size = 'Unknown';
+                    const nameComponents = pair.model.split(' ');
+                    
+                    for (const component of nameComponents) {
+                        if (component.includes('B') || component.includes('M')) {
+                            size = component;
+                            break;
+                        }
+                    }
+                    
+                    if (!groupedData[size]) {
+                        groupedData[size] = [];
+                    }
+                    groupedData[size].push(pair);
+                });
+            } else if (groupBy === 'method') {
+                validPairs.forEach(pair => {
+                    if (!groupedData[pair.method]) {
+                        groupedData[pair.method] = [];
+                    }
+                    groupedData[pair.method].push(pair);
+                });
+            } else { // No grouping
+                validPairs.forEach(pair => {
+                    const key = `${pair.model} (${pair.method})`;
+                    groupedData[key] = [pair];
+                });
+            }
+            
+            // Calculate average metric for each group
+            const labels = [];
+            const values = [];
+            
+            Object.keys(groupedData).forEach(group => {
+                const pairs = groupedData[group];
+                
+                // Calculate average metric
+                const sum = pairs.reduce((acc, pair) => {
+                    return acc + state.data[pair.model][pair.method][selectedDataset][state.selectedMetric];
+                }, 0);
+                
+                const avg = sum / pairs.length;
+                
+                labels.push(group);
+                values.push(avg);
+            });
+            
+            // Sort data based on user's preference
+            if (sortBy !== 'alphabetical') {
+                // Create an array of [label, value] pairs for sorting
+                let pairs = labels.map((label, i) => [label, values[i]]);
+                
+                // Sort pairs based on the metric value
+                if (sortBy === 'performance-desc') {
+                    pairs.sort((a, b) => b[1] - a[1]); // Descending
+                } else if (sortBy === 'performance-asc') {
+                    pairs.sort((a, b) => a[1] - b[1]); // Ascending
+                }
+                
+                // Update labels and values arrays
+                labels.length = 0;
+                values.length = 0;
+                
+                pairs.forEach(pair => {
+                    labels.push(pair[0]);
+                    values.push(pair[1]);
+                });
+            }
+            
+            // Create chart container
+            const chartContainer = document.createElement('div');
+            chartContainer.className = 'chart-container';
+            
+            const canvas = document.createElement('canvas');
+            canvas.id = 'overview-chart';
+            chartContainer.appendChild(canvas);
+            
+            vizContent.appendChild(chartContainer);
+            
+            // Create the chart
+            const ctx = canvas.getContext('2d');
+            
+            state.charts.overview = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: state.selectedMetric,
+                        data: values,
+                        backgroundColor: 'rgba(79, 70, 229, 0.7)',
+                        borderColor: 'rgba(79, 70, 229, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: `${state.selectedMetric} for ${selectedDataset}`,
+                            font: {
+                                size: 16
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                afterBody: function(tooltipItems) {
+                                    const index = tooltipItems[0].dataIndex;
+                                    const group = labels[index];
+                                    const pairs = groupedData[group];
+                                    
+                                    if (pairs.length === 1) {
+                                        return `Model: ${pairs[0].model}\nMethod: ${pairs[0].method}`;
+                                    } else {
+                                        return `Models: ${pairs.map(p => p.model).join(', ')}`;
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            min: Math.max(0.5, Math.min(...values) - 0.1),
+                            max: Math.min(1.0, Math.max(...values) + 0.1),
+                            title: {
+                                display: true,
+                                text: state.selectedMetric
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Render the comparison visualization
+        function renderComparisonView() {
+            const vizContent = document.getElementById('visualization-content');
+            
+            // Get selected models
+            const model1 = state.viewSpecificState.comparison.models[0];
+            const model2 = state.viewSpecificState.comparison.models[1];
+            
+            // Get selected method
+            const methodSelect = document.getElementById('comparison-method');
+            const selectedMethod = methodSelect.value;
+            
+            // Get sort preference
+            const sortBy = state.viewSpecificState.comparison.sortBy;
+            
+            // Validate selections
+            if (!model1 || !model2) {
+                showError('Please select two models to compare.');
+                return;
+            }
+            
+            if (!selectedMethod) {
+                showError('Please select a detection method.');
+                return;
+            }
+            
+            // Check if both models have data for this method
+            if (!state.data[model1] || !state.data[model1][selectedMethod] || 
+                !state.data[model2] || !state.data[model2][selectedMethod]) {
+                showError('One or both selected models do not have data for the selected method.');
+                return;
+            }
+            
+            // Get test sets that both models have data for
+            const commonDatasets = state.selectedDatasets.filter(dataset => 
+                state.data[model1][selectedMethod] && 
+                state.data[model1][selectedMethod][dataset] &&
+                state.data[model2][selectedMethod] && 
+                state.data[model2][selectedMethod][dataset]
+            );
+            
+            if (commonDatasets.length === 0) {
+                showError('No common datasets available for these models with the selected method.');
+                return;
+            }
+            
+            // Extract data for both models
+            const model1Data = commonDatasets.map(dataset => 
+                state.data[model1][selectedMethod][dataset][state.selectedMetric]
+            );
+            
+            const model2Data = commonDatasets.map(dataset => 
+                state.data[model2][selectedMethod][dataset][state.selectedMetric]
+            );
+            
+            // Calculate differences for sorting if needed
+            const differences = model1Data.map((val, i) => val - model2Data[i]);
+            
+            // Create pairs of [dataset, model1Data, model2Data, difference] for sorting
+            let pairs = commonDatasets.map((dataset, i) => [
+                dataset, 
+                model1Data[i], 
+                model2Data[i], 
+                differences[i]
+            ]);
+            
+            // Sort based on user's preference
+            if (sortBy === 'alphabetical') {
+                // Sort alphabetically, but put standard datasets first
+                const standardDatasets = ['essay', 'ai_human', 'hc3', 'hc3_plus', 'custom4o'];
+                pairs.sort((a, b) => {
+                    const aIsStandard = standardDatasets.includes(a[0]);
+                    const bIsStandard = standardDatasets.includes(b[0]);
+                    
+                    if (aIsStandard && !bIsStandard) return -1;
+                    if (!aIsStandard && bIsStandard) return 1;
+                    
+                    return a[0].localeCompare(b[0]);
+                });
+            } else if (sortBy === 'performance-desc') {
+                // Sort by model1's performance, highest first
+                pairs.sort((a, b) => b[1] - a[1]);
+            } else if (sortBy === 'performance-asc') {
+                // Sort by model1's performance, lowest first
+                pairs.sort((a, b) => a[1] - b[1]);
+            } else if (sortBy === 'difference-desc') {
+                // Sort by difference (model1 - model2), highest first
+                pairs.sort((a, b) => b[3] - a[3]);
+            }
+            
+            // Extract sorted data
+            const sortedDatasets = pairs.map(p => p[0]);
+            const sortedModel1Data = pairs.map(p => p[1]);
+            const sortedModel2Data = pairs.map(p => p[2]);
+            
+            // Format dataset labels for display
+            const displayLabels = sortedDatasets.map(dataset => {
+                if (dataset.startsWith('ghostbusters_')) {
+                    return dataset.replace('ghostbusters_', 'GB: ').replace(/_/g, ' ');
+                }
+                return dataset;
+            });
+            
+            // Create chart container
+            const chartContainer = document.createElement('div');
+            chartContainer.className = 'chart-container';
+            
+            const canvas = document.createElement('canvas');
+            canvas.id = 'comparison-chart';
+            chartContainer.appendChild(canvas);
+            
+            vizContent.appendChild(chartContainer);
+            
+            // Create the chart
+            const ctx = canvas.getContext('2d');
+            
+            state.charts.comparison = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: displayLabels,
+                    datasets: [
+                        {
+                            label: model1,
+                            data: sortedModel1Data,
+                            backgroundColor: 'rgba(79, 70, 229, 0.7)',
+                            borderColor: 'rgba(79, 70, 229, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: model2,
+                            data: sortedModel2Data,
+                            backgroundColor: 'rgba(236, 72, 153, 0.7)',
+                            borderColor: 'rgba(236, 72, 153, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: `${state.selectedMetric} Comparison (${selectedMethod})`,
+                            font: {
+                                size: 16
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                afterBody: function(tooltipItems) {
+                                    const index = tooltipItems[0].dataIndex;
+                                    const diff = sortedModel1Data[index] - sortedModel2Data[index];
+                                    return `Difference: ${diff.toFixed(4)}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            min: Math.max(0.5, Math.min(...sortedModel1Data, ...sortedModel2Data) - 0.1),
+                            max: Math.min(1.0, Math.max(...sortedModel1Data, ...sortedModel2Data) + 0.1),
+                            title: {
+                                display: true,
+                                text: state.selectedMetric
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Datasets'
+                            },
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Render the table visualization
+        function renderTableView() {
+            const vizContent = document.getElementById('visualization-content');
+            
+            // Get selected model and method
+            const model = state.viewSpecificState.table.model;
+            const method = state.viewSpecificState.table.method;
+            const sortBy = state.viewSpecificState.table.sortBy;
+            
+            // Validate selections
+            if (!model) {
+                showError('Please select a model to view.');
+                return;
+            }
+            
+            if (!method) {
+                showError('Please select a detection method.');
+                return;
+            }
+            
+            // Check if model has data for this method
+            if (!state.data[model] || !state.data[model][method]) {
+                showError('Selected model does not have data for the selected method.');
+                return;
+            }
+            
+            // Get datasets that this model has data for
+            const availableDatasets = state.selectedDatasets.filter(dataset => 
+                state.data[model][method] && state.data[model][method][dataset]
+            );
+            
+            if (availableDatasets.length === 0) {
+                showError('No datasets available for this model and method with current filters.');
+                return;
+            }
+            
+            // Create result objects for sorting
+            const results = availableDatasets.map(dataset => {
+                const result = state.data[model][method][dataset];
+                return {
+                    dataset,
+                    f1Score: result['F1 Score'],
+                    f1Low: result['F1 Score Confidence Interval'][0],
+                    f1High: result['F1 Score Confidence Interval'][1],
+                    auroc: result['AUROC'],
+                    aurocLow: result['ROC AUC Confidence Interval'][0],
+                    aurocHigh: result['ROC AUC Confidence Interval'][1]
+                };
+            });
+            
+            // Sort based on user's preference
+            if (sortBy === 'alphabetical') {
+                // Sort alphabetically, but put standard datasets first
+                const standardDatasets = ['essay', 'ai_human', 'hc3', 'hc3_plus', 'custom4o'];
+                results.sort((a, b) => {
+                    const aIsStandard = standardDatasets.includes(a.dataset);
+                    const bIsStandard = standardDatasets.includes(b.dataset);
+                    
+                    if (aIsStandard && !bIsStandard) return -1;
+                    if (!aIsStandard && bIsStandard) return 1;
+                    
+                    return a.dataset.localeCompare(b.dataset);
+                });
+            } else if (sortBy === 'f1-desc') {
+                // Sort by F1 score, highest first
+                results.sort((a, b) => b.f1Score - a.f1Score);
+            } else if (sortBy === 'f1-asc') {
+                // Sort by F1 score, lowest first
+                results.sort((a, b) => a.f1Score - b.f1Score);
+            } else if (sortBy === 'auroc-desc') {
+                // Sort by AUROC, highest first
+                results.sort((a, b) => b.auroc - a.auroc);
+            } else if (sortBy === 'auroc-asc') {
+                // Sort by AUROC, lowest first
+                results.sort((a, b) => a.auroc - b.auroc);
+            }
+            
+            // Create table container
+            const tableContainer = document.createElement('div');
+            tableContainer.className = 'table-container';
+            
+            // Create table
+            const table = document.createElement('table');
+            
+            // Create header
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+            
+            const headers = [
+                'Dataset', 
+                'F1 Score', 'F1 CI (Low)', 'F1 CI (High)', 
+                'AUROC', 'AUROC CI (Low)', 'AUROC CI (High)'
+            ];
+            
+            headers.forEach(header => {
+                const th = document.createElement('th');
+                th.textContent = header;
+                headerRow.appendChild(th);
+            });
+            
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+            
+            // Create body
+            const tbody = document.createElement('tbody');
+            
+            results.forEach(result => {
+                const row = document.createElement('tr');
+                
+                // Dataset
+                const datasetCell = document.createElement('td');
+                datasetCell.textContent = result.dataset;
+                row.appendChild(datasetCell);
+                
+                // F1 Score
+                const f1Cell = document.createElement('td');
+                f1Cell.textContent = result.f1Score.toFixed(4);
+                row.appendChild(f1Cell);
+                
+                // F1 CI Low
+                const f1LowCell = document.createElement('td');
+                f1LowCell.textContent = result.f1Low.toFixed(4);
+                row.appendChild(f1LowCell);
+                
+                // F1 CI High
+                const f1HighCell = document.createElement('td');
+                f1HighCell.textContent = result.f1High.toFixed(4);
+                row.appendChild(f1HighCell);
+                
+                // AUROC
+                const aurocCell = document.createElement('td');
+                aurocCell.textContent = result.auroc.toFixed(4);
+                row.appendChild(aurocCell);
+                
+                // AUROC CI Low
+                const aurocLowCell = document.createElement('td');
+                aurocLowCell.textContent = result.aurocLow.toFixed(4);
+                row.appendChild(aurocLowCell);
+                
+                // AUROC CI High
+                const aurocHighCell = document.createElement('td');
+                aurocHighCell.textContent = result.aurocHigh.toFixed(4);
+                row.appendChild(aurocHighCell);
+                
+                tbody.appendChild(row);
+            });
+            
+            table.appendChild(tbody);
+            tableContainer.appendChild(table);
+            
+            // Add title
+            const title = document.createElement('h3');
+            title.className = 'section-title';
+            title.textContent = `${model} - ${method}`;
+            
+            vizContent.appendChild(title);
+            vizContent.appendChild(tableContainer);
+        }
+    </script>
+</body>
+</html>
